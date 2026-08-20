@@ -1,24 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchPage } from './pages/SearchPage';
-import { Dna, Clock, ChevronDown, X, Info, FileText, BarChart2, BookOpen, CheckCircle2 } from 'lucide-react';
+import { AboutPage } from './pages/AboutPage';
+import { HowItWorksPage } from './pages/HowItWorksPage';
+import { EvaluationPage } from './pages/EvaluationPage';
+import { DocsPage } from './pages/DocsPage';
+import { Dna, Clock, ChevronDown, X, Globe, Heart } from 'lucide-react';
+
+type NavKey = 'search' | 'about' | 'how' | 'eval' | 'docs';
 
 export const App: React.FC = () => {
-  const [activeNav, setActiveNav] = useState<'search' | 'about' | 'how' | 'eval' | 'docs'>('search');
-  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState<NavKey>('search');
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
 
-  const handleNavClick = (navKey: 'search' | 'about' | 'how' | 'eval' | 'docs') => {
+  // Sync hash routing with nav state
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['search', 'about', 'how', 'eval', 'docs'].includes(hash)) {
+        setActiveNav(hash as NavKey);
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleNavClick = (navKey: NavKey) => {
     setActiveNav(navKey);
-    if (navKey !== 'search') {
-      setActiveModal(navKey);
-    }
+    window.location.hash = navKey;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="biosearch-app">
+    <div className="biosearch-app flex flex-col min-h-screen">
       {/* Top Navbar */}
       <header className="biosearch-navbar">
         <div className="navbar-container">
-          <div className="nav-brand">
+          <div className="nav-brand cursor-pointer" onClick={() => handleNavClick('search')}>
             <div className="brand-logo-icon">
               <Dna size={22} className="text-blue-600" />
             </div>
@@ -77,7 +96,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               className="btn-nav-action"
-              onClick={() => setActiveModal('history')}
+              onClick={() => setShowHistoryModal(true)}
             >
               <Clock size={15} />
               <span>History</span>
@@ -92,97 +111,112 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Page Content */}
-      <main className="biosearch-main-body">
-        <SearchPage />
+      {/* Main Dedicated Page View Container */}
+      <main className="biosearch-main-body flex-1">
+        {activeNav === 'search' && <SearchPage />}
+        {activeNav === 'about' && <AboutPage />}
+        {activeNav === 'how' && <HowItWorksPage />}
+        {activeNav === 'eval' && <EvaluationPage />}
+        {activeNav === 'docs' && <DocsPage />}
       </main>
 
-      {/* Modals for Navbar tabs */}
-      {activeModal && (
-        <div className="modal-backdrop" onClick={() => { setActiveModal(null); setActiveNav('search'); }}>
+      {/* Unified Professional Footer */}
+      <footer className="biosearch-footer-container">
+        <div className="footer-inner-wrapper">
+          <div className="footer-cols-grid">
+            <div>
+              <div className="footer-brand-title">
+                <Dna size={20} className="text-blue-400" />
+                <span>BioSearch</span>
+              </div>
+              <p style={{ lineHeight: 1.5 }}>
+                NLM MeSH Guardrailed Hybrid Semantic Retrieval Engine for PubMed. Hallucination-free biomedical literature discovery.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="footer-heading">Navigation</h4>
+              <ul className="footer-links-list">
+                <li><button onClick={() => handleNavClick('search')} className="footer-link-btn">Semantic Search</button></li>
+                <li><button onClick={() => handleNavClick('about')} className="footer-link-btn">About Solution</button></li>
+                <li><button onClick={() => handleNavClick('how')} className="footer-link-btn">How It Works</button></li>
+                <li><button onClick={() => handleNavClick('eval')} className="footer-link-btn">Evaluation Benchmarks</button></li>
+                <li><button onClick={() => handleNavClick('docs')} className="footer-link-btn">API Documentation</button></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="footer-heading">Technology Stack</h4>
+              <ul className="footer-links-list">
+                <li>FastAPI Microservices</li>
+                <li>BioBERT Embeddings</li>
+                <li>NLM MeSH Thesaurus</li>
+                <li>NCBI PubMed E-Utilities API</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="footer-heading">Hackathon Context</h4>
+              <p style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>
+                Cognizant NiT Hackathon — Use Case #7 (Gen AI / Biomedical Search).
+              </p>
+              <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span>Built with precision</span> <Heart size={12} className="text-rose-500" style={{ fill: '#F43F5E' }} /> <span>by Julfikar Ali</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="footer-bottom-bar">
+            <span>&copy; {new Date().getFullYear()} BioSearch. All rights reserved.</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Globe size={13} /> PubMed E-Utilities API Connected
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Quick History Drawer/Modal */}
+      {showHistoryModal && (
+        <div className="modal-backdrop" onClick={() => setShowHistoryModal(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-box-header">
-              <h3>
-                {activeModal === 'about' && <Info size={20} className="inline mr-2 text-blue-600" />}
-                {activeModal === 'how' && <FileText size={20} className="inline mr-2 text-blue-600" />}
-                {activeModal === 'eval' && <BarChart2 size={20} className="inline mr-2 text-blue-600" />}
-                {activeModal === 'docs' && <BookOpen size={20} className="inline mr-2 text-blue-600" />}
-                {activeModal === 'history' && <Clock size={20} className="inline mr-2 text-blue-600" />}
-                {activeModal.toUpperCase()}
+              <h3 className="flex items-center gap-2 text-slate-900 font-bold">
+                <Clock size={20} className="text-blue-600" />
+                Recent Search Pipeline History
               </h3>
               <button
                 type="button"
                 className="btn-close"
-                onClick={() => { setActiveModal(null); setActiveNav('search'); }}
+                onClick={() => setShowHistoryModal(false)}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="modal-box-body">
-              {activeModal === 'about' && (
-                <div className="space-y-2 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-900">Semantic Search for PubMed — Solution Architecture</p>
-                  <p><strong>Cognizant NiT Hackathon — Use Case #7 (Gen AI)</strong></p>
-                  <p>
-                    BioSearch sits in front of PubMed. A validated, hallucination-guarded query expansion pulls in the papers keyword search misses, and semantic re-ranking puts the right ones on top.
-                  </p>
-                </div>
-              )}
-              {activeModal === 'how' && (
-                <div className="space-y-3 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-900">Two-Stage Hybrid Retrieval & Semantic Ranking Architecture:</p>
-                  <ol className="list-decimal pl-5 space-y-1">
-                    <li><strong>Concept Extraction</strong>: Biomedical NER using sciSpacy / constrained NLP.</li>
-                    <li><strong>LLM Synonym Expansion</strong>: Proposes candidate clinical terms ("myocardial infarction", "MI").</li>
-                    <li><strong>MeSH Guardrail</strong>: Checks candidate terms against official NLM MeSH thesaurus; unvalidated terms are dropped.</li>
-                    <li><strong>Query Builder</strong>: Constructs field-tagged PubMed boolean query with <code>[mh]</code> and <code>[tiab]</code> syntax.</li>
-                    <li><strong>NCBI E-utilities</strong>: Batched ESearch & EFetch retrieving candidate abstract pool (~100-300 abstracts).</li>
-                    <li><strong>Biomedical Embedding & Reranking</strong>: Cosine similarity + BM25 score fusion into final Top-K results.</li>
-                  </ol>
-                </div>
-              )}
-              {activeModal === 'eval' && (
-                <div className="space-y-3 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-900">Evaluation Harness Benchmark Results:</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-blue-50 p-2 rounded border border-blue-100">
-                      <span className="font-bold block text-blue-900">Precision@10</span>
-                      <span className="text-emerald-600 font-bold">+48.2% Improvement</span>
-                      <span className="block text-slate-500">Target: &gt;40%</span>
-                    </div>
-                    <div className="bg-emerald-50 p-2 rounded border border-emerald-100">
-                      <span className="font-bold block text-emerald-900">Recall@10</span>
-                      <span className="text-emerald-600 font-bold">+57.7% Improvement</span>
-                      <span className="block text-slate-500">Target: &gt;35%</span>
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded border border-purple-100">
-                      <span className="font-bold block text-purple-900">NDCG@10</span>
-                      <span className="text-purple-600 font-bold">0.87 (vs 0.64 Baseline)</span>
-                    </div>
-                    <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                      <span className="font-bold block text-slate-900">Response Latency</span>
-                      <span className="text-slate-800 font-bold">0.33s (Target &lt;2.0s)</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {activeModal === 'docs' && (
-                <p className="text-sm text-slate-700">
-                  FastAPI OpenAPI Swagger Documentation: <code>http://localhost:8000/docs</code>
-                </p>
-              )}
-              {activeModal === 'history' && (
-                <div className="space-y-2 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-800">Recent Search Pipeline Queries:</p>
-                  <ul className="list-disc pl-5 text-blue-600">
-                    <li>What are the effects of metformin on type 2 diabetes?</li>
-                    <li>studies on heart attack risk in diabetics</li>
-                    <li>checkpoint inhibitors lung cancer</li>
-                    <li>statins cardiovascular effects</li>
-                  </ul>
-                </div>
-              )}
+            <div className="modal-box-body space-y-3">
+              <p className="text-xs text-slate-500">Click any previous query to run it instantly in the search engine:</p>
+              <div className="space-y-2">
+                {[
+                  "What are the effects of metformin on type 2 diabetes?",
+                  "studies on heart attack risk in diabetics",
+                  "pd-1 immune checkpoint inhibitors lung cancer",
+                  "statins cardiovascular prevention effects"
+                ].map((q, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setShowHistoryModal(false);
+                      handleNavClick('search');
+                    }}
+                    className="w-full text-left p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group"
+                  >
+                    <span>{q}</span>
+                    <span className="text-blue-600 text-xs group-hover:underline">Re-run query &rarr;</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
