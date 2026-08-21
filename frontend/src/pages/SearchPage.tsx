@@ -14,7 +14,7 @@ export const SearchPage: React.FC = () => {
   const [sortBy, setSortBy] = useState("Hybrid Score");
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async (queryText: string) => {
+  const handleSearch = async (queryText: string, bypassSpellCorrection = false) => {
     setIsLoading(true);
     setError(null);
     setActiveStep(1);
@@ -22,12 +22,13 @@ export const SearchPage: React.FC = () => {
     try {
       const res = await executeSemanticSearch({
         query: queryText,
+        use_spell_correction: !bypassSpellCorrection,
         use_llm_expansion: true,
         use_mesh_guardrail: true,
         hybrid_alpha: 0.6,
       });
       setResponse(res);
-      setActiveStep(6);
+      setActiveStep(7);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to execute search query against PubMed.");
@@ -38,7 +39,7 @@ export const SearchPage: React.FC = () => {
 
   return (
     <div className="biosearch-page-container">
-      <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+      <SearchBar onSearch={(q) => handleSearch(q, false)} isLoading={isLoading} />
 
       {response && (
         <PipelineStepper currentStep={activeStep} onStepClick={(s) => setActiveStep(s)} />
@@ -47,7 +48,7 @@ export const SearchPage: React.FC = () => {
       {isLoading ? (
         <div className="search-loading-container">
           <Loader2 className="spinner-icon text-blue-600" size={36} />
-          <p className="mt-2 text-slate-600 font-medium">Executing 8-step pipeline: NCBI ESearch → Vector Embedding → Hybrid Reranking...</p>
+          <p className="mt-2 text-slate-600 font-medium">Executing 7-step pipeline: Fuzzy MeSH Check → Concept Extraction → NCBI ESearch → Vector Embedding → Hybrid Reranking...</p>
         </div>
       ) : error ? (
         <div className="error-card bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-center my-6">
@@ -63,11 +64,37 @@ export const SearchPage: React.FC = () => {
               expandedSynonyms={response.expanded_synonyms}
               pubmedQuery={response.pubmed_query}
               summary={response.summary}
+              spellCorrections={response.spell_corrections}
             />
           </aside>
 
           {/* Right Column: Top Re-ranked Results */}
           <main className="grid-right-col">
+            {response.corrected_query && response.corrected_query !== response.query && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-blue-800">Showing results for:</span>
+                  <span className="font-bold text-blue-950 underline decoration-blue-400 underline-offset-2">
+                    {response.corrected_query}
+                  </span>
+                  <span className="text-slate-500 italic ml-1">
+                    (Search instead for{" "}
+                    <button
+                      type="button"
+                      onClick={() => handleSearch(response.query, true)}
+                      className="underline cursor-pointer text-blue-700 hover:text-blue-900 font-medium"
+                    >
+                      {response.query}
+                    </button>
+                    )
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-medium text-[11px]">
+                  MeSH Auto-Corrected
+                </span>
+              </div>
+            )}
+
             <div className="results-card-container">
               <div className="results-header-row">
                 <h2 className="results-title">Re-ranked Results ({response.results.length})</h2>

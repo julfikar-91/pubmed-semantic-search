@@ -1,20 +1,21 @@
 import React from 'react';
 
 interface PipelineStepperProps {
-  currentStep: number; // 1 to 6
+  currentStep: number; // 1 to 7
   onStepClick?: (step: number) => void;
 }
 
 const STEPS = [
-  { id: 1, label: "Query Understanding" },
-  { id: 2, label: "Concept Extraction" },
-  { id: 3, label: "MeSH Validation" },
-  { id: 4, label: "Query Builder" },
-  { id: 5, label: "Retrieval" },
-  { id: 6, label: "Ranking" },
+  { id: 1, label: "Fuzzy Spell Correction" },
+  { id: 2, label: "Concept Extraction (NER)" },
+  { id: 3, label: "Synonym Expansion" },
+  { id: 4, label: "MeSH Guardrail" },
+  { id: 5, label: "PubMed Query Builder" },
+  { id: 6, label: "Vector Retrieval" },
+  { id: 7, label: "Hybrid Reranking" },
 ];
 
-export const PipelineStepper: React.FC<PipelineStepperProps> = ({ currentStep = 2, onStepClick }) => {
+export const PipelineStepper: React.FC<PipelineStepperProps> = ({ currentStep = 7, onStepClick }) => {
   return (
     <div className="stepper-bar-container">
       <div className="stepper-chevrons-row">

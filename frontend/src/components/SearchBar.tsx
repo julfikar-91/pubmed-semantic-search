@@ -8,6 +8,7 @@ interface SearchBarProps {
 
 const TRY_EXAMPLES = [
   "metformin type 2 diabetes",
+  "metformn in type 2 diabtes (typo demo)",
   "checkpoint inhibitors lung cancer",
   "statins cardiovascular effects"
 ];
@@ -26,6 +27,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
     let fullQuery = example;
     if (example === "metformin type 2 diabetes") {
       fullQuery = "What are the effects of metformin on type 2 diabetes?";
+    } else if (example === "metformn in type 2 diabtes (typo demo)") {
+      fullQuery = "effects of metformn on type 2 diabtes and renal functon";
     } else if (example === "checkpoint inhibitors lung cancer") {
       fullQuery = "What is the efficacy of checkpoint inhibitors in lung cancer?";
     } else if (example === "statins cardiovascular effects") {

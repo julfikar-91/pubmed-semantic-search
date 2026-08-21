@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronUp, ChevronDown, CheckCircle2, FileText, Database, Award } from 'lucide-react';
-import { ExtractedConcept, ExpandedSynonym, MeSHValidationResult, RetrievalSummary } from '../types';
+import { ChevronUp, ChevronDown, CheckCircle2, FileText, Database, Award, Wand2 } from 'lucide-react';
+import { ExtractedConcept, ExpandedSynonym, MeSHValidationResult, RetrievalSummary, SpellCorrection } from '../types';
 
 interface QueryProcessingDetailsProps {
   concepts: ExtractedConcept[];
@@ -8,6 +8,7 @@ interface QueryProcessingDetailsProps {
   expandedSynonyms: ExpandedSynonym[];
   pubmedQuery: string;
   summary?: RetrievalSummary;
+  spellCorrections?: SpellCorrection[];
 }
 
 export const QueryProcessingDetails: React.FC<QueryProcessingDetailsProps> = ({
@@ -15,7 +16,8 @@ export const QueryProcessingDetails: React.FC<QueryProcessingDetailsProps> = ({
   validatedMesh,
   expandedSynonyms,
   pubmedQuery,
-  summary = { total_articles: 3842, esearch_results: 3842, final_results: 10 }
+  summary = { total_articles: 3842, esearch_results: 3842, final_results: 10 },
+  spellCorrections = []
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -35,6 +37,34 @@ export const QueryProcessingDetails: React.FC<QueryProcessingDetailsProps> = ({
 
       {!isCollapsed && (
         <div className="panel-content-body">
+          {/* Biomedical Spell Corrections */}
+          {spellCorrections && spellCorrections.length > 0 && (
+            <div className="processing-section">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Wand2 size={15} className="text-amber-600" />
+                <h4 className="section-label text-amber-900 mb-0 font-semibold">Biomedical Spell Correction (Fuzzy MeSH)</h4>
+              </div>
+              <div className="space-y-2">
+                {spellCorrections.map((sc, idx) => (
+                  <div key={idx} className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-xs flex items-center justify-between">
+                    <div>
+                      <span className="line-through text-slate-400 mr-1.5">{sc.original_term}</span>
+                      <strong className="text-amber-900 font-bold">→ {sc.corrected_term}</strong>
+                      {sc.mesh_id && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded font-mono text-[10px]">
+                          {sc.mesh_id}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-amber-700 font-medium text-[11px]">
+                      {Math.round(sc.confidence * 100)}% match
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Extracted Concepts */}
           <div className="processing-section">
             <h4 className="section-label">Extracted Concepts</h4>

@@ -1,37 +1,116 @@
-# Environment & Secret files
+# =============================================================================
+# Root .gitignore for PubMed Semantic Search (FastAPI + Vite/React/TS Monorepo)
+# =============================================================================
+
+# --- Environment & Secret Variables ---
 .env
-.env.local
+.env.*
+!.env.example
 *.env
 *.pem
 *.key
+*.cert
+*.p12
 
-# Python & Backend
+# --- Large Medical Datasets, Raw XML & Binary Dictionaries ---
+data/
+*.xml
+*.gz
+*.pkl
+*.pkl.gz
+*.parquet
+*.sqlite
+*.sqlite3
+*.db
+*.fa
+*.fasta
+*.obo
+
+# --- Python / Backend Virtual Environments & Caches ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
 .venv/
+venv/
 ENV/
+env/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-*.log
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.tox/
 
-# Node & Frontend
+# Logs & Debugging
+*.log
+logs/
+*.pid
+
+# --- Node / Frontend Artifacts & Dependencies ---
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build Outputs
+frontend/dist/
 dist/
-build/
-.npm
+dist-ssr/
+*.local
+
+# TypeScript / Linter Caches
 *.tsbuildinfo
 .eslintcache
+.stylelintcache
+.prettiercache
 
-# IDE & OS Specific
+# --- IDEs, Editors & Operating System Files ---
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 *.swp
 *.swo
+*~
+
+# Operating System
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+[Dd]esktop.ini

@@ -59,9 +59,19 @@ export interface PipelineStepLog {
   details: string;
 }
 
+export interface SpellCorrection {
+  original_term: string;
+  corrected_term: string;
+  mesh_id?: string;
+  mesh_heading?: string;
+  confidence: number;
+  candidates: string[];
+}
+
 export interface SearchRequest {
   query: string;
   filters?: SearchFilter;
+  use_spell_correction?: boolean;
   use_llm_expansion: boolean;
   use_mesh_guardrail: boolean;
   hybrid_alpha: number;
@@ -69,6 +79,8 @@ export interface SearchRequest {
 
 export interface SearchResponse {
   query: string;
+  corrected_query?: string;
+  spell_corrections?: SpellCorrection[];
   pubmed_query: string;
   concepts: ExtractedConcept[];
   expanded_synonyms: ExpandedSynonym[];

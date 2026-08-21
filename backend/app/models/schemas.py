@@ -9,6 +9,14 @@ class SearchFilter(BaseModel):
     min_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Minimum relevance score filter")
     max_results: int = Field(default=20, ge=1, le=100, description="Maximum results to return")
 
+class SpellCorrection(BaseModel):
+    original_term: str
+    corrected_term: str
+    mesh_id: Optional[str] = None
+    mesh_heading: Optional[str] = None
+    confidence: float = 0.0
+    candidates: List[str] = []
+
 class ExtractedConcept(BaseModel):
     text: str
     category: str = Field(description="Entity category: Drug, Disease, Outcome, Gene, Mechanism, etc.")
@@ -59,12 +67,15 @@ class PipelineStepLog(BaseModel):
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=2, description="Natural language medical search query")
     filters: Optional[SearchFilter] = Field(default_factory=SearchFilter)
+    use_spell_correction: bool = Field(default=True, description="Enable Biomedical offline MeSH dictionary & fuzzy spell correction")
     use_llm_expansion: bool = Field(default=True, description="Enable LLM synonym expansion")
     use_mesh_guardrail: bool = Field(default=True, description="Enable MeSH dictionary guardrail validation")
     hybrid_alpha: float = Field(default=0.6, ge=0.0, le=1.0, description="Weight for semantic similarity vs lexical PubMed score")
 
 class SearchResponse(BaseModel):
     query: str
+    corrected_query: Optional[str] = None
+    spell_corrections: List[SpellCorrection] = []
     pubmed_query: str
     concepts: List[ExtractedConcept] = []
     expanded_synonyms: List[ExpandedSynonym] = []

@@ -1,7 +1,11 @@
 import os
+from pathlib import Path
 # pyrefly: ignore [missing-import]
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE_PATH = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
     APP_NAME: str = "PubMed Semantic Search API"
@@ -9,16 +13,16 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # NCBI Entrez PubMed API settings
-    NCBI_API_KEY: Optional[str] = os.getenv("NCBI_API_KEY", "")
-    NCBI_EMAIL: str = os.getenv("NCBI_EMAIL", "researcher@example.com")
+    NCBI_API_KEY: Optional[str] = ""
+    NCBI_EMAIL: str = "researcher@example.com"
 
     # LLM Settings (OpenAI / Gemini / Mock)
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "mock")  # "openai", "gemini", "mock"
-    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", "")
-    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", "")
+    LLM_PROVIDER: str = "mock"  # "openai", "gemini", "mock"
+    OPENAI_API_KEY: Optional[str] = ""
+    GEMINI_API_KEY: Optional[str] = ""
 
     # Vector store & Embedding settings
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     VECTOR_DIMENSION: int = 384
 
     # Cache settings
@@ -33,8 +37,11 @@ class Settings(BaseSettings):
         "*"
     ]
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE_PATH) if ENV_FILE_PATH.exists() else ".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()
+

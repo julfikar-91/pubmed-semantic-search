@@ -10,11 +10,25 @@ logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
+logger = logging.getLogger(__name__)
+
+from contextlib import asynccontextmanager
+from app.services.mesh_data import MeshDictionaryManager
+from app.pipeline.spell_correct import BiomedicalSpellChecker
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Initializing NLM MeSH Dictionary & Spell Checker at startup...")
+    MeshDictionaryManager.get_instance()
+    BiomedicalSpellChecker.get_instance()
+    logger.info("MeSH Biomedical Dictionary & Spell Checker ready!")
+    yield
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="FastAPI Backend for PubMed Semantic Search & Medical NLP Pipeline"
+    description="FastAPI Backend for PubMed Semantic Search & Medical NLP Pipeline",
+    lifespan=lifespan
 )
 
 app.add_middleware(
