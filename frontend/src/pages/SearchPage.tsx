@@ -48,7 +48,7 @@ export const SearchPage: React.FC = () => {
       {isLoading ? (
         <div className="search-loading-container">
           <Loader2 className="spinner-icon text-blue-600" size={36} />
-          <p className="mt-2 text-slate-600 font-medium">Executing 7-step pipeline: Fuzzy MeSH Check → Concept Extraction → NCBI ESearch → Vector Embedding → Hybrid Reranking...</p>
+          <p className="mt-2 text-slate-600 font-medium">Executing 8-step pipeline: Fuzzy MeSH Check → Concept Extraction → NCBI ESearch → Vector Embedding → Hybrid Reranking...</p>
         </div>
       ) : error ? (
         <div className="error-card bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-center my-6">
@@ -59,12 +59,17 @@ export const SearchPage: React.FC = () => {
           {/* Left Column: Query Processing Details */}
           <aside className="grid-left-col">
             <QueryProcessingDetails
+              originalQuery={response.query}
+              correctedQuery={response.corrected_query}
               concepts={response.concepts}
               validatedMesh={response.validated_mesh}
               expandedSynonyms={response.expanded_synonyms}
               pubmedQuery={response.pubmed_query}
               summary={response.summary}
               spellCorrections={response.spell_corrections}
+              pipelineLogs={response.pipeline_logs}
+              executionTimeMs={response.execution_time_ms}
+              cached={response.cached}
             />
           </aside>
 

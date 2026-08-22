@@ -15,14 +15,20 @@ logger = logging.getLogger(__name__)
 from contextlib import asynccontextmanager
 from app.services.mesh_data import MeshDictionaryManager
 from app.pipeline.spell_correct import BiomedicalSpellChecker
+from app.services.http_client import HttpClientPool
+from app.pipeline.embed_and_score import compute_embeddings_with_cache
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing NLM MeSH Dictionary & Spell Checker at startup...")
     MeshDictionaryManager.get_instance()
     BiomedicalSpellChecker.get_instance()
-    logger.info("MeSH Biomedical Dictionary & Spell Checker ready!")
+    # Pre-build vector cache and connection pool
+    _ = compute_embeddings_with_cache(["medical test query"])
+    logger.info("MeSH Biomedical Dictionary & Embedding Model warmed up and ready!")
     yield
+    await HttpClientPool.close()
+
 
 app = FastAPI(
     title=settings.APP_NAME,

@@ -19,6 +19,54 @@ except ImportError:
 
 # Common Modern Clinical & Pharmacological Entities (Supplementary to Core MeSH)
 MODERN_CLINICAL_SUPPLEMENT: Dict[str, Dict[str, Any]] = {
+    "diabetes": {
+        "mesh_id": "D003920",
+        "mesh_heading": "Diabetes Mellitus",
+        "category": "Disease",
+        "synonyms": ["diabetes mellitus", "diabetic", "hyperglycemia"]
+    },
+    "metformin": {
+        "mesh_id": "D004559",
+        "mesh_heading": "Metformin",
+        "category": "Drug",
+        "synonyms": ["glucophage", "dimethylbiguanide"]
+    },
+    "semaglutide": {
+        "mesh_id": "D000077543",
+        "mesh_heading": "Glucagon-Like Peptide-1 Receptor Agonists",
+        "category": "Drug",
+        "synonyms": ["ozempic", "wegovy", "rybelsus", "glp-1 agonist"]
+    },
+    "liraglutide": {
+        "mesh_id": "D000077543",
+        "mesh_heading": "Glucagon-Like Peptide-1 Receptor Agonists",
+        "category": "Drug",
+        "synonyms": ["victoza", "saxenda"]
+    },
+    "tirzepatide": {
+        "mesh_id": "D000077543",
+        "mesh_heading": "Tirzepatide",
+        "category": "Drug",
+        "synonyms": ["mounjaro", "zepbound", "gip/glp-1 agonist"]
+    },
+    "weight loss": {
+        "mesh_id": "D015431",
+        "mesh_heading": "Weight Loss",
+        "category": "Outcome",
+        "synonyms": ["weight reduction", "body weight changes"]
+    },
+    "obesity": {
+        "mesh_id": "D009765",
+        "mesh_heading": "Obesity",
+        "category": "Disease",
+        "synonyms": ["overweight", "adiposity"]
+    },
+    "melanoma": {
+        "mesh_id": "D008545",
+        "mesh_heading": "Melanoma",
+        "category": "Disease",
+        "synonyms": ["malignant melanoma"]
+    },
     "pembrolizumab": {
         "mesh_id": "D000074322",
         "mesh_heading": "Pembrolizumab",
@@ -30,12 +78,6 @@ MODERN_CLINICAL_SUPPLEMENT: Dict[str, Dict[str, Any]] = {
         "mesh_heading": "Nivolumab",
         "category": "Drug",
         "synonyms": ["opdivo", "anti-pd-1", "checkpoint inhibitor"]
-    },
-    "tirzepatide": {
-        "mesh_id": "D000077543",
-        "mesh_heading": "Tirzepatide",
-        "category": "Drug",
-        "synonyms": ["mounjaro", "zepbound", "gip/glp-1 agonist"]
     },
     "empagliflozin": {
         "mesh_id": "D000077203",
@@ -63,15 +105,17 @@ MODERN_CLINICAL_SUPPLEMENT: Dict[str, Dict[str, Any]] = {
     }
 }
 
-# Standard English stop words that should NOT be spell corrected into medical terms
+# Standard English stop words and general biomedical terms that should NOT be modified
 STOP_WORDS = {
     "what", "are", "the", "effects", "effect", "of", "on", "in", "with", "from",
-    "that", "this", "were", "have", "been", "about", "role", "treatment", "patients",
-    "study", "studies", "risk", "and", "or", "for", "by", "is", "a", "an", "to",
+    "that", "this", "these", "those", "were", "have", "has", "had", "been", "about",
+    "role", "treatment", "treatments", "patient", "patients", "study", "studies",
+    "risk", "and", "or", "for", "by", "is", "a", "an", "to", "not", "non",
     "versus", "vs", "between", "during", "after", "before", "impact", "efficacy",
     "evaluation", "analysis", "clinical", "trial", "trials", "human", "humans",
     "cancer", "cancers", "disease", "diseases", "drug", "drugs", "cell", "cells",
-    "gene", "genes", "rate", "rates", "therapy", "therapies", "outcome", "outcomes"
+    "gene", "genes", "rate", "rates", "therapy", "therapies", "outcome", "outcomes",
+    "weight", "loss", "adult", "adults", "elderly", "pediatric", "control", "placebo"
 }
 
 # Recognized standard biomedical acronyms that should be protected
@@ -79,7 +123,7 @@ PROTECTED_ACRONYMS = {
     "t2d", "t2dm", "t1d", "t1dm", "glp-1", "glp1", "sglt2", "sglt-2", "mrna", "dna",
     "rna", "hiv", "aids", "chf", "hfpef", "hfref", "mi", "cvd", "htn", "ckd",
     "nsclc", "sclc", "egfr", "her2", "kras", "pcr", "car-t", "cart", "bmi",
-    "cad", "copd", "ra", "sle", "ibd", "afib", "dvt", "pe", "ards", "icu"
+    "cad", "copd", "ra", "sle", "ibd", "afib", "dvt", "pe", "ards", "icu", "mace"
 }
 
 class BiomedicalSpellChecker:
@@ -87,6 +131,7 @@ class BiomedicalSpellChecker:
 
     def __init__(self):
         self.mesh_mgr = MeshDictionaryManager.get_instance()
+        self.known_single_words: Set[str] = set()
         # Fast 1st-letter + length indexed buckets for single tokens
         self.single_buckets: Dict[str, List[str]] = {}
         # Multi-word indexed by first letter of 1st word & word length
@@ -102,12 +147,36 @@ class BiomedicalSpellChecker:
     def _init_vocabulary_index(self):
         """Indexes vocabulary into lightweight letter+length partitions for sub-5ms lookup."""
         all_single = set(self.mesh_mgr.single_word_vocab)
+        
+        # Extract individual medical keywords from multi-word MeSH terms and descriptors
+        for phrase in self.mesh_mgr.multi_word_vocab:
+            clean_phrase = re.sub(r"[^\w\s-]", " ", phrase)
+            for word in clean_phrase.split():
+                w = word.strip().lower()
+                if len(w) >= 3 and w not in STOP_WORDS:
+                    all_single.add(w)
+
+        for desc in self.mesh_mgr.descriptors.values():
+            heading = desc.get("mesh_heading", "")
+            clean_head = re.sub(r"[^\w\s-]", " ", heading)
+            for word in clean_head.split():
+                w = word.strip().lower()
+                if len(w) >= 3 and w not in STOP_WORDS:
+                    all_single.add(w)
+
         for term, data in MODERN_CLINICAL_SUPPLEMENT.items():
             if len(term.split()) == 1:
                 all_single.add(term.lower())
+            else:
+                for word in term.split():
+                    w = word.strip().lower()
+                    if len(w) >= 3:
+                        all_single.add(w)
             for syn in data.get("synonyms", []):
                 if len(syn.split()) == 1:
                     all_single.add(syn.lower())
+
+        self.known_single_words = all_single
 
         for term in all_single:
             if len(term) < 3:
@@ -121,6 +190,14 @@ class BiomedicalSpellChecker:
 
         # Multi-word phrases
         for phrase in self.mesh_mgr.multi_word_vocab:
+            words = phrase.split()
+            w_count = len(words)
+            if 2 <= w_count <= 4:
+                first_char = phrase[0]
+                key = f"{first_char}_{w_count}"
+                self.multi_buckets.setdefault(key, []).append(phrase)
+
+        for phrase, data in MODERN_CLINICAL_SUPPLEMENT.items():
             words = phrase.split()
             w_count = len(words)
             if 2 <= w_count <= 4:
@@ -148,11 +225,12 @@ class BiomedicalSpellChecker:
     def fuzzy_match_token(self, token: str, threshold: float = 0.80) -> Optional[Tuple[str, float, List[str], Dict[str, Any]]]:
         token_clean = token.strip().lower()
 
-        if len(token_clean) < 4 or token_clean in STOP_WORDS or token_clean in PROTECTED_ACRONYMS:
-            return None
-
-        # If it's already an exact valid MeSH term or exact dictionary entry, do NOT modify!
-        if token_clean in self.mesh_mgr.term_to_mesh or token_clean in MODERN_CLINICAL_SUPPLEMENT:
+        if (len(token_clean) < 4 or 
+            token_clean in STOP_WORDS or 
+            token_clean in PROTECTED_ACRONYMS or 
+            token_clean in self.known_single_words or 
+            token_clean in self.mesh_mgr.term_to_mesh or 
+            token_clean in MODERN_CLINICAL_SUPPLEMENT):
             return None
 
         candidate_vocab = self._get_single_candidates(token_clean)
@@ -266,6 +344,21 @@ def correct_biomedical_query(query: str, similarity_threshold: float = 0.80) -> 
         return query, []
 
     checker = BiomedicalSpellChecker.get_instance()
+    
+    # Instant O(1) Fast-Path: If all words in query exist in known vocab or stop words, return immediately (< 0.02ms)
+    raw_tokens = [w.strip().lower() for w in re.findall(r"[\w'-]+", query)]
+    has_unknown = any(
+        (len(t) >= 4 and 
+         t not in STOP_WORDS and 
+         t not in PROTECTED_ACRONYMS and 
+         t not in checker.known_single_words and 
+         t not in checker.mesh_mgr.term_to_mesh and
+         t not in MODERN_CLINICAL_SUPPLEMENT)
+        for t in raw_tokens
+    )
+    if not has_unknown:
+        return query, []
+
     corrected_query = query
     corrections: List[SpellCorrection] = []
     replaced_tokens: Set[str] = set()
@@ -290,7 +383,6 @@ def correct_biomedical_query(query: str, similarity_threshold: float = 0.80) -> 
             phrase_match = checker.fuzzy_match_phrase(phrase_lower, threshold=similarity_threshold + 0.04)
             if phrase_match:
                 canonical, score, top_cands, mesh_info = phrase_match
-                # Mark original and new tokens as protected from double-replacement
                 for w in span_words:
                     replaced_tokens.add(w.lower())
                 for w in canonical.split():

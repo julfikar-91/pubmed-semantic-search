@@ -4,6 +4,7 @@ import { AboutPage } from './pages/AboutPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { EvaluationPage } from './pages/EvaluationPage';
 import { DocsPage } from './pages/DocsPage';
+import { SystemStatusBadge } from './components/SystemStatusBadge';
 import { Dna, Clock, ChevronDown, X, Globe, Heart } from 'lucide-react';
 
 type NavKey = 'search' | 'about' | 'how' | 'eval' | 'docs';
@@ -86,12 +87,9 @@ export const App: React.FC = () => {
           </nav>
 
           <div className="nav-right-actions">
-            <div className="ncbi-status-pill">
-              <span className="ncbi-label">NCBI Status</span>
-              <span className="ncbi-val">
-                <span className="dot-green"></span> Operational
-              </span>
-            </div>
+            {/* Live System & API Status Indicator Light with Dropdown Details */}
+            <SystemStatusBadge />
+
 
             <button
               type="button"

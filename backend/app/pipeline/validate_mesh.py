@@ -1,24 +1,24 @@
 # pyrefly: ignore [missing-import]
-import httpx
 import logging
 from typing import List, Dict, Optional
 from app.models.schemas import ExpandedSynonym, MeSHValidationResult
+from app.services.http_client import HttpClientPool, execute_with_retry
 
 logger = logging.getLogger(__name__)
 
 # Official MeSH Index Cache for fast local guardrail validation
 OFFICIAL_MESH_DATABASE: Dict[str, Dict] = {
     "Metformin": {
-        "id": "C004559",
+        "id": "D004559",
         "heading": "Metformin",
         "tree": ["D02.065.045"],
         "status_note": "D004559"
     },
     "Diabetes Mellitus, Type 2": {
-        "id": "C003920",
+        "id": "D003924",
         "heading": "Diabetes Mellitus, Type 2",
         "tree": ["C18.452.394.750.149"],
-        "status_note": "D003920"
+        "status_note": "D003924"
     },
     "Glucagon-Like Peptide-1 Receptor Agonists": {
         "id": "D000077543",
@@ -155,7 +155,11 @@ OFFICIAL_MESH_DATABASE: Dict[str, Dict] = {
 }
 
 async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool = True) -> List[MeSHValidationResult]:
-    """Step 4: MeSH Guardrail: Validate candidate terms against MeSH taxonomy to filter hallucinations."""
+    """
+    Step 4: Strict MeSH Guardrail:
+    Validates candidate terms against official MeSH taxonomy to filter hallucinations.
+    Non-existent or fabricated terms are explicitly marked is_valid=False.
+    """
     results: List[MeSHValidationResult] = []
 
     if not enabled:
@@ -169,13 +173,28 @@ async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool 
         return results
 
     from app.services.mesh_data import MeshDictionaryManager
+    from app.pipeline.spell_correct import MODERN_CLINICAL_SUPPLEMENT
     mesh_mgr = MeshDictionaryManager.get_instance()
 
     for item in expanded_synonyms:
-        candidate = item.mesh_heading or item.term
+        candidate = (item.mesh_heading or item.term).strip()
+        cand_lower = candidate.lower()
         matched = None
 
-        # Check in full loaded MeSH Manager first
+        # 1. Instant check in Modern Clinical Supplement
+        if cand_lower in MODERN_CLINICAL_SUPPLEMENT:
+            c_info = MODERN_CLINICAL_SUPPLEMENT[cand_lower]
+            results.append(MeSHValidationResult(
+                original_term=item.term,
+                mesh_unique_id=c_info["mesh_id"],
+                mesh_heading=c_info["mesh_heading"],
+                tree_numbers=[],
+                is_valid=True,
+                status_note=f"Verified ({c_info['mesh_id']})"
+            ))
+            continue
+
+        # 2. Instant check in full loaded NLM MeSH Dictionary (O(1) memory lookup)
         m_entry = mesh_mgr.get_mesh_entry(candidate) or mesh_mgr.get_mesh_entry(item.term)
         if m_entry:
             results.append(MeSHValidationResult(
@@ -184,12 +203,25 @@ async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool 
                 mesh_heading=m_entry.get("mesh_heading", candidate),
                 tree_numbers=m_entry.get("tree_numbers", []),
                 is_valid=True,
-                status_note=m_entry.get("mesh_id", "Verified")
+                status_note=f"Verified ({m_entry.get('mesh_id', 'MeSH')})"
             ))
             continue
 
+        if cand_lower in mesh_mgr.term_to_mesh:
+            mesh_id = mesh_mgr.term_to_mesh[cand_lower]
+            results.append(MeSHValidationResult(
+                original_term=item.term,
+                mesh_unique_id=mesh_id,
+                mesh_heading=candidate.title(),
+                tree_numbers=[],
+                is_valid=True,
+                status_note=f"Verified ({mesh_id})"
+            ))
+            continue
+
+        # 3. Check in Static Official MeSH Database
         for heading, data in OFFICIAL_MESH_DATABASE.items():
-            if heading.lower() == candidate.lower() or candidate.lower() in heading.lower() or heading.lower() in candidate.lower():
+            if heading.lower() == cand_lower or cand_lower == data.get("heading", "").lower():
                 matched = data
                 break
 
@@ -200,46 +232,43 @@ async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool 
                 mesh_heading=matched["heading"],
                 tree_numbers=matched["tree"],
                 is_valid=True,
-                status_note=matched.get("status_note", "D004559")
+                status_note=f"Verified ({matched['id']})"
             ))
-        else:
-            mesh_record = await _query_ncbi_mesh_api(candidate)
-            if mesh_record:
-                results.append(MeSHValidationResult(
-                    original_term=item.term,
-                    mesh_unique_id=mesh_record.get("id"),
-                    mesh_heading=mesh_record.get("heading"),
-                    tree_numbers=mesh_record.get("tree", []),
-                    is_valid=True,
-                    status_note="Verified via NCBI MeSH API"
-                ))
-            else:
-                results.append(MeSHValidationResult(
-                    original_term=item.term,
-                    mesh_heading=candidate,
-                    is_valid=True,
-                    status_note="Verified via Title/Abstract keyword taxonomy"
-                ))
+            continue
+
+        # 4. Strict Guardrail Rejection: Flag non-MeSH term locally without network latency
+        results.append(MeSHValidationResult(
+            original_term=item.term,
+            mesh_heading=candidate,
+            is_valid=False,
+            status_note="Rejected (Not found in MeSH taxonomy)"
+        ))
 
     return results
 
 async def _query_ncbi_mesh_api(term: str) -> Optional[Dict]:
-    """Query NCBI EUtilities for MeSH term verification."""
+    """Query NCBI EUtilities for MeSH term verification with connection pool."""
+    if len(term.strip()) < 3:
+        return None
     try:
+        client = HttpClientPool.get_client()
         url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
         params = {
             "db": "mesh",
-            "term": f"{term}[MeSH Terms]",
+            "term": f'"{term}"[MeSH Terms]',
             "retmode": "json",
             "retmax": 1
         }
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(url, params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                id_list = data.get("esearchresult", {}).get("idlist", [])
-                if id_list:
-                    return {"id": id_list[0], "heading": term, "tree": []}
+        resp = await execute_with_retry(
+            lambda: client.get(url, params=params, timeout=1.2),
+            max_retries=2,
+            initial_delay=0.2
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            id_list = data.get("esearchresult", {}).get("idlist", [])
+            if id_list:
+                return {"id": id_list[0], "heading": term, "tree": []}
     except Exception as e:
-        logger.debug(f"NCBI MeSH API lookup failed for '{term}': {e}")
+        logger.debug(f"NCBI MeSH API lookup skipped for '{term}': {e}")
     return None

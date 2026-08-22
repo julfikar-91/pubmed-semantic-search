@@ -25,6 +25,8 @@ data/
 *.fa
 *.fasta
 *.obo
+scratch_*.json
+
 
 # --- Python / Backend Virtual Environments & Caches ---
 __pycache__/

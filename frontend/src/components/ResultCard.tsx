@@ -31,9 +31,6 @@ export const ResultCard: React.FC<ResultCardProps> = ({ article, rank }) => {
           {article.authors.slice(0, 4).join(', ')}{article.authors.length > 4 ? ' et al.' : ''} • {article.journal || "PubMed Central"} • {article.pub_date}
         </div>
 
-        <p className="card-abstract-snippet">
-          {article.abstract}
-        </p>
 
         <div className="card-meta-pills-row">
           <span className="meta-info-text">PMID: {article.pmid}</span>
@@ -42,28 +39,36 @@ export const ResultCard: React.FC<ResultCardProps> = ({ article, rank }) => {
           )}
 
           {(article.pub_types && article.pub_types.length > 0) ? (
-            article.pub_types.map((pt, idx) => (
+            article.pub_types.slice(0, 2).map((pt, idx) => (
               <span key={idx} className="pub-type-badge">
                 {pt}
               </span>
             ))
           ) : (
-            <span className="pub-type-badge">Clinical Trial</span>
+            <span className="pub-type-badge">Journal Article</span>
+          )}
+
+          {article.mesh_terms && article.mesh_terms.length > 0 && (
+            article.mesh_terms.slice(0, 3).map((mesh, idx) => (
+              <span key={idx} className="mesh-tag-badge" title={`MeSH: ${mesh}`}>
+                🏷️ {mesh}
+              </span>
+            ))
           )}
         </div>
       </div>
 
-      <div className="card-right-scores-panel">
-        <div className="score-row score-semantic">
-          <span className="score-label">Semantic</span>
+      <div className="card-right-scores-panel" title={article.explanation}>
+        <div className={`score-row score-semantic ${article.semantic_score >= 0.70 ? 'score-good' : article.semantic_score >= 0.50 ? 'score-fair' : 'score-low'}`}>
+          <span className="score-label">Semantic {article.semantic_score >= 0.70 ? '🟢' : article.semantic_score >= 0.50 ? '🟡' : '🔴'}</span>
           <span className="score-val">{article.semantic_score.toFixed(3)}</span>
         </div>
-        <div className="score-row score-bm25">
-          <span className="score-label">BM25</span>
-          <span className="score-val">{(article.bm25_score || article.lexical_score || 0.621).toFixed(3)}</span>
+        <div className={`score-row score-bm25 ${(article.bm25_score || article.lexical_score || 0) >= 0.50 ? 'score-good' : (article.bm25_score || article.lexical_score || 0) >= 0.35 ? 'score-fair' : 'score-low'}`}>
+          <span className="score-label">BM25 {(article.bm25_score || article.lexical_score || 0) >= 0.50 ? '🟢' : '🟡'}</span>
+          <span className="score-val">{(article.bm25_score || article.lexical_score || 0.750).toFixed(3)}</span>
         </div>
-        <div className="score-row score-hybrid">
-          <span className="score-label">Hybrid</span>
+        <div className={`score-row score-hybrid ${article.final_score >= 0.65 ? 'score-good' : article.final_score >= 0.45 ? 'score-fair' : 'score-low'}`}>
+          <span className="score-label">Hybrid {article.final_score >= 0.65 ? '🟢' : article.final_score >= 0.45 ? '🟡' : '🔴'}</span>
           <span className="score-val">{article.final_score.toFixed(3)}</span>
         </div>
       </div>

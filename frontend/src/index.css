@@ -923,6 +923,19 @@ body {
   color: var(--accent-purple);
 }
 
+.score-good .score-val {
+  color: #15803D; /* Green */
+}
+
+.score-fair .score-val {
+  color: #B45309; /* Amber */
+}
+
+.score-low .score-val {
+  color: #B91C1C; /* Red */
+}
+
+
 /* Pagination Footer */
 .results-pagination-footer {
   display: flex;

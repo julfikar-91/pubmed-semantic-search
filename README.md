@@ -13,7 +13,7 @@ An AI-powered 8-step semantic search engine and literature discovery platform fo
    - **Step 5**: Automatic PubMed Boolean Query Builder using `[Mesh]` and `[Title/Abstract]` field tags.
    - **Step 6**: Async NCBI Entrez ESearch & EFetch API client with caching and resilience fallbacks.
    - **Step 7**: Dense Vector Embeddings using `SentenceTransformers` (`all-MiniLM-L6-v2`) and FAISS store.
-   - **Step 8**: Hybrid Score Fusion (Reciprocal Rank Fusion blending semantic vector similarity & PubMed rank).
+   - **Step 8**: Calibrated 5-Factor Hybrid Relevance Scoring (40% Semantic Vector + 25% BM25 Lexical + 15% MeSH + 10% Title + 10% Coverage).
 
 2. **Modern Medical Search Interface**:
    - Live 8-step pipeline visualizer showing step durations and execution logs.
