@@ -13,11 +13,13 @@
 *.p12
 
 # --- Large Medical Datasets, Raw XML & Binary Dictionaries ---
-data/
 *.xml
 *.gz
 *.pkl
 *.pkl.gz
+# Allow only the pre-compiled MeSH dictionary cache (5MB) for production deployment
+!backend/data/mesh_dictionary_cache.pkl.gz
+!data/mesh_dictionary_cache.pkl.gz
 *.parquet
 *.sqlite
 *.sqlite3

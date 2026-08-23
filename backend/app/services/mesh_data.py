@@ -8,25 +8,37 @@ from typing import Dict, List, Set, Any, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 POSSIBLE_DATA_DIRS = [
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "data")),
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")),
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data")),            # backend/data (Primary)
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")),       # pubmed-semantic-search/data
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "data")), # workspace/data
     r"E:\cognt\BetaGenx\data"
 ]
 
-XML_PATH = ""
 CACHE_PATH = ""
+XML_PATH = ""
+
+# 1. First priority: look for pre-compiled compressed cache (best for production / deploy)
 for d in POSSIBLE_DATA_DIRS:
-    candidate_xml = os.path.join(d, "Offline Dictionary.xml")
-    if os.path.exists(candidate_xml):
-        XML_PATH = candidate_xml
-        CACHE_PATH = os.path.join(d, "mesh_dictionary_cache.pkl.gz")
+    candidate_cache = os.path.join(d, "mesh_dictionary_cache.pkl.gz")
+    if os.path.exists(candidate_cache):
+        CACHE_PATH = candidate_cache
+        XML_PATH = os.path.join(d, "Offline Dictionary.xml")
         break
 
-if not XML_PATH:
-    DATA_DIR = POSSIBLE_DATA_DIRS[0]
-    XML_PATH = os.path.join(DATA_DIR, "Offline Dictionary.xml")
-    CACHE_PATH = os.path.join(DATA_DIR, "mesh_dictionary_cache.pkl.gz")
+# 2. Second priority: look for raw XML file if cache not found
+if not CACHE_PATH:
+    for d in POSSIBLE_DATA_DIRS:
+        candidate_xml = os.path.join(d, "Offline Dictionary.xml")
+        if os.path.exists(candidate_xml):
+            XML_PATH = candidate_xml
+            CACHE_PATH = os.path.join(d, "mesh_dictionary_cache.pkl.gz")
+            break
+
+# 3. Default fallback paths
+if not CACHE_PATH:
+    default_dir = POSSIBLE_DATA_DIRS[0]
+    CACHE_PATH = os.path.join(default_dir, "mesh_dictionary_cache.pkl.gz")
+    XML_PATH = os.path.join(default_dir, "Offline Dictionary.xml")
 
 
 class MeshDictionaryManager:
