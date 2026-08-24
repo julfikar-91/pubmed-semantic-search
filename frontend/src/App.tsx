@@ -5,13 +5,14 @@ import { HowItWorksPage } from './pages/HowItWorksPage';
 import { EvaluationPage } from './pages/EvaluationPage';
 import { DocsPage } from './pages/DocsPage';
 import { SystemStatusBadge } from './components/SystemStatusBadge';
-import { Dna, Clock, ChevronDown, X, Globe, Heart } from 'lucide-react';
+import { Dna, Clock, ChevronDown, X, Globe, Heart, Menu } from 'lucide-react';
 
 type NavKey = 'search' | 'about' | 'how' | 'eval' | 'docs';
 
 export const App: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavKey>('search');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Sync hash routing with nav state
   useEffect(() => {
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
   const handleNavClick = (navKey: NavKey) => {
     setActiveNav(navKey);
     window.location.hash = navKey;
+    setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -48,7 +50,8 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <nav className="nav-links">
+          {/* Desktop Navigation Links */}
+          <nav className="nav-links desktop-only-nav">
             <button
               type="button"
               className={`nav-link-btn ${activeNav === 'search' ? 'active' : ''}`}
@@ -90,23 +93,85 @@ export const App: React.FC = () => {
             {/* Live System & API Status Indicator Light with Dropdown Details */}
             <SystemStatusBadge />
 
-
             <button
               type="button"
-              className="btn-nav-action"
+              className="btn-nav-action desktop-only-btn"
               onClick={() => setShowHistoryModal(true)}
             >
               <Clock size={15} />
               <span>History</span>
             </button>
 
-            <div className="user-profile-btn">
+            <div className="user-profile-btn desktop-only-profile">
               <div className="avatar-circle">J</div>
               <span className="user-name">Julfikar Ali</span>
               <ChevronDown size={14} />
             </div>
+
+            {/* Mobile Hamburger Menu Toggle Button */}
+            <button
+              type="button"
+              className="mobile-menu-toggle-btn"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <div className="mobile-nav-drawer">
+            <div className="mobile-nav-links-list">
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeNav === 'search' ? 'active' : ''}`}
+                onClick={() => handleNavClick('search')}
+              >
+                <span>🔍 Semantic Search</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeNav === 'about' ? 'active' : ''}`}
+                onClick={() => handleNavClick('about')}
+              >
+                <span>💡 About Solution</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeNav === 'how' ? 'active' : ''}`}
+                onClick={() => handleNavClick('how')}
+              >
+                <span>⚡ How It Works</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeNav === 'eval' ? 'active' : ''}`}
+                onClick={() => handleNavClick('eval')}
+              >
+                <span>📊 Evaluation Benchmarks</span>
+              </button>
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeNav === 'docs' ? 'active' : ''}`}
+                onClick={() => handleNavClick('docs')}
+              >
+                <span>📚 API Docs</span>
+              </button>
+              <button
+                type="button"
+                className="mobile-nav-item history-item"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setShowHistoryModal(true);
+                }}
+              >
+                <span>🕒 Search History</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Dedicated Page View Container */}

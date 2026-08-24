@@ -2040,4 +2040,372 @@ body {
   color: #64748B;
 }
 
+/* ==========================================================================
+   MOBILE & RESPONSIVE DESIGN SYSTEM (ALL SCREEN SIZES)
+   ========================================================================== */
 
+/* Mobile Menu Toggle Button (Default Hidden on Desktop) */
+.mobile-menu-toggle-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 0.45rem;
+  color: #334155;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle-btn:hover {
+  background: #F1F5F9;
+  color: #2563EB;
+  border-color: #CBD5E1;
+}
+
+/* Mobile Navigation Drawer */
+.mobile-nav-drawer {
+  display: none;
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.12);
+  padding: 1rem 1.25rem;
+  animation: slideDownMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownMobile {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-nav-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #334155;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item.active {
+  background: #EFF6FF;
+  color: #2563EB;
+  border-color: #BFDBFE;
+}
+
+.mobile-nav-item.history-item {
+  background: #F1F5F9;
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+/* Tablets and Mobile Devices (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .biosearch-page-container {
+    padding: 1rem 1.25rem;
+  }
+
+  .biosearch-main-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .grid-left-col,
+  .grid-right-col {
+    width: 100%;
+  }
+
+  .kpi-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .feature-cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tech-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile Screens (max-width: 860px) */
+@media (max-width: 860px) {
+  .desktop-only-nav,
+  .desktop-only-btn,
+  .desktop-only-profile {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle-btn {
+    display: inline-flex;
+  }
+
+  .mobile-nav-drawer {
+    display: block;
+  }
+
+  .biosearch-navbar {
+    padding: 0.6rem 1.2rem;
+  }
+
+  .brand-name {
+    font-size: 1.05rem;
+  }
+
+  .brand-sub {
+    font-size: 0.68rem;
+  }
+
+  .nav-right-actions {
+    gap: 0.6rem;
+  }
+}
+
+/* Mobile Phones (max-width: 768px) */
+@media (max-width: 768px) {
+  .biosearch-page-container {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Hero Banner & Watermarks on Mobile */
+  .exact-hero-banner {
+    padding: 1.75rem 1rem;
+    border-radius: 16px;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-svg-left,
+  .hero-svg-right {
+    display: none; /* Hide heavy background SVGs on small screens for clarity */
+  }
+
+  .exact-hero-title {
+    font-size: 1.35rem;
+    line-height: 1.25;
+    margin-bottom: 0.4rem;
+  }
+
+  .exact-hero-subtitle {
+    font-size: 0.78rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Mobile Search Input Card */
+  .exact-search-input-card {
+    flex-direction: column;
+    padding: 0.75rem;
+    gap: 0.65rem;
+    border-radius: 14px;
+  }
+
+  .exact-search-input {
+    font-size: 0.88rem;
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+  }
+
+  .btn-exact-submit {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.92rem;
+    border-radius: 10px;
+  }
+
+  .btn-icon-clear {
+    right: 0.5rem;
+    top: 0.75rem;
+  }
+
+  /* Horizontal Scroll for Example Pills */
+  .exact-examples-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .examples-pills-list {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 0.4rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .examples-pills-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .exact-example-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+
+  /* Horizontal Swipable Pipeline Stepper */
+  .stepper-bar-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.5rem 0;
+  }
+
+  .stepper-bar-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stepper-chevrons-row {
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: 720px; /* Enables horizontal swipe across 7 steps */
+  }
+
+  /* Result Cards on Mobile */
+  .result-card,
+  .exact-article-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .results-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .article-title-link {
+    font-size: 0.98rem;
+    line-height: 1.4;
+  }
+
+  .article-meta-row {
+    font-size: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .score-breakdown-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Evaluation & Benchmark Page Mobile */
+  .kpi-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .page-hero-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 16px;
+  }
+
+  .page-hero-title {
+    font-size: 1.4rem;
+    line-height: 1.25;
+  }
+
+  .page-hero-desc {
+    font-size: 0.85rem;
+  }
+
+  .page-hero-pills {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* How It Works Page Mobile */
+  .timeline-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .sandbox-flow-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .flow-arrow {
+    transform: rotate(90deg); /* Turn right arrow into downward arrow on phone */
+    margin: 0.25rem 0;
+  }
+
+  .preset-btn-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .btn-preset {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .feature-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tech-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-cols-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Modals on Mobile */
+  .modal-box {
+    width: 95%;
+    max-height: 90vh;
+    padding: 1rem;
+  }
+}
+
+/* Extra Small Phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .brand-text-col {
+    display: none; /* Keep logo clean on tiny screens */
+  }
+
+  .exact-hero-title {
+    font-size: 1.2rem;
+  }
+
+  .btn-exact-submit span {
+    font-size: 0.88rem;
+  }
+}
