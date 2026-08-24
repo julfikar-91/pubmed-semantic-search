@@ -284,7 +284,7 @@ export const EvaluationPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {evalData.query_evaluations.map((q) => (
+                {evalData.query_evaluations.map((q: any) => (
                   <tr key={q.id} className="hover:bg-slate-50">
                     <td className="p-3 font-mono font-bold text-slate-800">{q.id}</td>
                     <td className="p-3">
