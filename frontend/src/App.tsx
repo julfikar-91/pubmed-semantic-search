@@ -102,12 +102,6 @@ export const App: React.FC = () => {
               <span>History</span>
             </button>
 
-            <div className="user-profile-btn desktop-only-profile">
-              <div className="avatar-circle">J</div>
-              <span className="user-name">Julfikar Ali</span>
-              <ChevronDown size={14} />
-            </div>
-
             {/* Mobile Hamburger Menu Toggle Button */}
             <button
               type="button"
