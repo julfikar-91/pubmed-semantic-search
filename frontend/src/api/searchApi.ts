@@ -1,6 +1,7 @@
 import { SearchRequest, SearchResponse, Article } from '../types';
 
-const BACKEND_URL = '/api';
+// Reads backend URL strictly from private Environment Variable (default to localhost for local dev)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000/api';
 
 export async function executeSemanticSearch(request: SearchRequest): Promise<SearchResponse> {
   const response = await fetch(`${BACKEND_URL}/search`, {
