@@ -9,10 +9,8 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=False
-      - NCBI_EMAIL=researcher@example.com
-      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+    env_file:
+      - .env
     deploy:
       resources:
         limits:
