@@ -230,12 +230,12 @@ export const App: React.FC = () => {
                 Team Members & Roles:
               </p>
               <div className="flex flex-col gap-1 text-[11px]" style={{ color: '#E2E8F0' }}>
-                <div><span className="font-bold text-blue-300">Kunal Kumar Das</span> <span className="text-slate-400">— Team Leader & Backend</span></div>
                 <div><span className="font-bold text-indigo-300">Julfikar Ali</span> <span className="text-slate-400">— Project Leader, Full-Stack Gen AI & Deployment</span></div>
                 <div><span className="font-bold text-slate-200">Koyna Jha</span> <span className="text-slate-400">— NLP & ML</span></div>
                 <div><span className="font-bold text-slate-200">Khustar Jamal Ansari</span> <span className="text-slate-400">— API Integration</span></div>
-                <div><span className="font-bold text-slate-200">Kuntal Paul</span> <span className="text-slate-400">— Frontend</span></div>
+                <div><span className="font-bold text-slate-200">Kuntal Paul</span> <span className="text-slate-400">— Backend & Data Pipeline</span></div>
                 <div><span className="font-bold text-slate-200">Mamon Seikh</span> <span className="text-slate-400">— Biomedical Data & Eval</span></div>
+                <div><span className="font-bold text-slate-200">Kunal Kumar Das</span> <span className="text-slate-400">— Frontend & UI/UX</span></div>
               </div>
               <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.6rem', fontSize: '0.75rem' }}>
                 <span>Built for Hackathon with</span> <Heart size={11} className="text-rose-500" style={{ fill: '#F43F5E' }} />

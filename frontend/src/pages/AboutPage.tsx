@@ -25,13 +25,6 @@ import {
 export const AboutPage: React.FC = () => {
   const teamMembers = [
     { 
-      name: 'Kunal Kumar Das', 
-      role: 'Frontend & UI/UX Developer', 
-      detail: 'Team Leadership & Coordination, React, TypeScript, Interactive Pipeline Stepper & UI System',
-      leaderBadge: 'Team Leader',
-      badgeClass: 'bg-blue-600 text-white'
-    },
-    { 
       name: 'Julfikar Ali', 
       role: 'Project Leader, Full-Stack Gen AI & Cloud Deployment Lead', 
       detail: 'End-to-End Full-Stack Architecture, 8-Stage Backend Pipeline, Core NLM MeSH Engine, Gen AI Embeddings, Docker & Cloud Deployment',
@@ -50,13 +43,18 @@ export const AboutPage: React.FC = () => {
     },
     { 
       name: 'Kuntal Paul', 
-      role: 'Frontend & UI/UX Developer', 
-      detail: 'React, TypeScript, Interactive Pipeline Stepper & UI System' 
+      role: 'Backend & Data Pipeline Developer', 
+      detail: 'FastAPI Microservices, Caching Layer & Backend Boolean Query Pipeline' 
     },
     { 
       name: 'Mamon Seikh', 
       role: 'Biomedical Data & Evaluation Specialist', 
       detail: 'Benchmark Testing, Precision/Recall Evaluation & Validation Matrix' 
+    },
+    { 
+      name: 'Kunal Kumar Das', 
+      role: 'Frontend & UI/UX Developer', 
+      detail: 'React, TypeScript, Interactive Pipeline Stepper & UI System'
     }
   ];
 
