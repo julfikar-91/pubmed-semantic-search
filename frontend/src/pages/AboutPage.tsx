@@ -32,14 +32,21 @@ export const AboutPage: React.FC = () => {
       badgeClass: 'bg-indigo-600 text-white'
     },
     { 
+      name: 'Kunal Kumar Das', 
+      role: 'Team Leader, Frontend & UI/UX', 
+      detail: 'Team Leadership & Coordination, React, TypeScript, Interactive Pipeline Stepper & UI System',
+      leaderBadge: 'Team Leader',
+      badgeClass: 'bg-blue-600 text-white'
+    },
+    { 
       name: 'Koyna Jha', 
       role: 'NLP & Machine Learning Engineer', 
       detail: 'Biomedical NER, Synonym Expansion & Vector Embedding Models' 
     },
     { 
       name: 'Khustar Jamal Ansari', 
-      role: 'API Integration & NCBI Services', 
-      detail: 'NCBI Entrez E-Utilities, Async Fetching & Data Resilience' 
+      role: 'API Integration, NCBI Services & Backend', 
+      detail: 'NCBI Entrez E-Utilities, Async Fetching, Data Resilience & Backend Integration' 
     },
     { 
       name: 'Kuntal Paul', 
@@ -50,11 +57,6 @@ export const AboutPage: React.FC = () => {
       name: 'Mamon Seikh', 
       role: 'Biomedical Data & Evaluation Specialist', 
       detail: 'Benchmark Testing, Precision/Recall Evaluation & Validation Matrix' 
-    },
-    { 
-      name: 'Kunal Kumar Das', 
-      role: 'Frontend & UI/UX Developer', 
-      detail: 'React, TypeScript, Interactive Pipeline Stepper & UI System'
     }
   ];
 
