@@ -70,9 +70,20 @@ def build_pubmed_query(
             if pub_type_terms:
                 filter_parts.append(f"({' OR '.join(pub_type_terms)})")
 
-        if filters.date_from or filters.date_to:
-            date_from_str = filters.date_from.replace("-", "/").replace(".", "/") if filters.date_from else "1900/01/01"
-            date_to_str = filters.date_to.replace("-", "/").replace(".", "/") if filters.date_to else "3000/12/31"
+        date_from_val = filters.date_from.strip() if filters.date_from else ""
+        date_to_val = filters.date_to.strip() if filters.date_to else ""
+
+        if date_from_val or date_to_val:
+            if len(date_from_val) == 4 and date_from_val.isdigit():
+                date_from_str = f"{date_from_val}/01/01"
+            else:
+                date_from_str = date_from_val.replace("-", "/").replace(".", "/") if date_from_val else "1900/01/01"
+
+            if len(date_to_val) == 4 and date_to_val.isdigit():
+                date_to_str = f"{date_to_val}/12/31"
+            else:
+                date_to_str = date_to_val.replace("-", "/").replace(".", "/") if date_to_val else "3000/12/31"
+
             filter_parts.append(f'"{date_from_str}"[Date - Publication] : "{date_to_str}"[Date - Publication]')
 
         if filter_parts:

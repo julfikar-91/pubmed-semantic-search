@@ -1,30 +1,52 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, SearchX, Zap, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SearchX, Zap, Calendar, Filter } from 'lucide-react';
 import { SearchBar } from '../components/SearchBar';
 import { PipelineStepper } from '../components/PipelineStepper';
 import { ResultCard } from '../components/ResultCard';
+import { ProfessionalSearchAnimation } from '../components/ProfessionalSearchAnimation';
 import { executeSemanticSearch } from '../api/searchApi';
-import { SearchResponse } from '../types';
+import { SearchFilter, SearchResponse } from '../types';
 
 export const SearchPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [lastQuery, setLastQuery] = useState<string>("");
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [activeStep, setActiveStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   
+  // Search Filter state (Date range, Pub types, etc.)
+  const [filters, setFilters] = useState<SearchFilter>({
+    date_from: undefined,
+    date_to: undefined,
+    pub_types: [],
+    min_score: 0.0,
+    max_results: 20
+  });
+
   // Interactive Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 5; // 5 articles per page
 
-  const handleSearch = async (queryText: string, bypassSpellCorrection = false) => {
+  const handleSearch = async (
+    queryText: string, 
+    customFilters?: SearchFilter, 
+    bypassSpellCorrection = false
+  ) => {
     setIsLoading(true);
+    setLastQuery(queryText);
     setError(null);
     setActiveStep(1);
     setCurrentPage(1); // Reset to page 1 on new search
 
+    const effectiveFilters = customFilters || filters;
+    if (customFilters) {
+      setFilters(customFilters);
+    }
+
     try {
       const res = await executeSemanticSearch({
         query: queryText,
+        filters: effectiveFilters,
         use_spell_correction: !bypassSpellCorrection,
         use_llm_expansion: true,
         use_mesh_guardrail: true,
@@ -70,17 +92,19 @@ export const SearchPage: React.FC = () => {
 
   return (
     <div className="biosearch-page-container">
-      <SearchBar onSearch={(q) => handleSearch(q, false)} isLoading={isLoading} />
+      <SearchBar 
+        onSearch={(q, f) => handleSearch(q, f, false)} 
+        isLoading={isLoading} 
+        filters={filters}
+        onFiltersChange={(f) => setFilters(f)}
+      />
 
       {response && (
         <PipelineStepper currentStep={activeStep} onStepClick={(s) => setActiveStep(s)} />
       )}
 
       {isLoading ? (
-        <div className="search-loading-container">
-          <Loader2 className="spinner-icon text-blue-600" size={36} />
-          <p className="mt-2 text-slate-600 font-medium">Executing 8-step pipeline: Fuzzy MeSH Check → Concept Extraction → Vector Embedding → Hybrid Reranking...</p>
-        </div>
+        <ProfessionalSearchAnimation query={lastQuery} />
       ) : error ? (
         <div className="error-card bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-center my-6">
           <p>{error}</p>
@@ -98,7 +122,7 @@ export const SearchPage: React.FC = () => {
                   (Search instead for{" "}
                   <button
                     type="button"
-                    onClick={() => handleSearch(response.query, true)}
+                    onClick={() => handleSearch(response.query, filters, true)}
                     className="underline cursor-pointer text-blue-700 hover:text-blue-900 font-medium"
                   >
                     {response.query}
@@ -109,6 +133,29 @@ export const SearchPage: React.FC = () => {
               <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-medium text-[11px]">
                 MeSH Auto-Corrected
               </span>
+            </div>
+          )}
+
+          {/* Active Search Meta & Filters Banner */}
+          {(filters.date_from || filters.date_to || (filters.pub_types && filters.pub_types.length > 0)) && (
+            <div className="mb-4 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between flex-wrap gap-2 text-xs text-slate-700">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-slate-800 flex items-center gap-1">
+                  <Filter size={12} className="text-blue-600" /> Applied Filters:
+                </span>
+                {(filters.date_from || filters.date_to) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100/80 text-blue-800 rounded font-medium text-[11px]">
+                    <Calendar size={11} />
+                    <span>{filters.date_from || 'Beginning'} &rarr; {filters.date_to || 'Present'}</span>
+                  </span>
+                )}
+                {filters.pub_types && filters.pub_types.map((pt) => (
+                  <span key={pt} className="px-2 py-0.5 bg-slate-200/80 text-slate-800 rounded font-medium text-[11px]">
+                    {pt}
+                  </span>
+                ))}
+              </div>
+              <span className="text-slate-400 text-[11px]">NCBI [Date - Publication] Filter Active</span>
             </div>
           )}
 
@@ -134,8 +181,8 @@ export const SearchPage: React.FC = () => {
             {totalItems === 0 ? (
               <div className="no-results-box text-center py-12 text-slate-500">
                 <SearchX size={40} className="mx-auto mb-3 text-slate-400" />
-                <p className="font-semibold text-slate-700">No PubMed articles matched this search criteria.</p>
-                <p className="text-xs text-slate-500 mt-1">Try refining your query or searching with different clinical terms.</p>
+                <p className="font-semibold text-slate-700">No PubMed articles matched this search criteria and date range.</p>
+                <p className="text-xs text-slate-500 mt-1">Try expanding the date range (e.g. selecting "Any Date") or refining your query.</p>
               </div>
             ) : (
               <div className="results-items-list space-y-4">

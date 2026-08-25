@@ -180,15 +180,18 @@ export const App: React.FC = () => {
       {/* Unified Professional Footer */}
       <footer className="biosearch-footer-container">
         <div className="footer-inner-wrapper">
-          <div className="footer-cols-grid">
+          <div className="footer-cols-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
             <div>
               <div className="footer-brand-title">
                 <Dna size={20} className="text-blue-400" />
                 <span>BioSearch</span>
               </div>
-              <p style={{ lineHeight: 1.5 }}>
+              <p style={{ lineHeight: 1.5, fontSize: '0.82rem', color: '#94A3B8', marginBottom: '0.75rem' }}>
                 NLM MeSH Guardrailed Hybrid Semantic Retrieval Engine for PubMed. Hallucination-free biomedical literature discovery.
               </p>
+              <div style={{ fontSize: '0.78rem', color: '#CBD5E1' }}>
+                <span className="text-blue-400 font-semibold">Problem:</span> Semantic Search (PubMed)
+              </div>
             </div>
 
             <div>
@@ -203,32 +206,55 @@ export const App: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="footer-heading">Technology Stack</h4>
+              <h4 className="footer-heading">Technology & API</h4>
               <ul className="footer-links-list">
-                <li>FastAPI Microservices</li>
-                <li>BioBERT Embeddings</li>
-                <li>NLM MeSH Thesaurus</li>
-                <li>NCBI PubMed E-Utilities API</li>
+                <li>FastAPI & Python 3.13</li>
+                <li>SentenceTransformers MiniLM</li>
+                <li>NLM MeSH 2026 Dictionary</li>
+                <li>
+                  <a
+                    href="https://www.ncbi.nlm.nih.gov/home/develop/api/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="footer-link-btn text-blue-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    NCBI PubMed APIs <Globe size={11} />
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="footer-heading">Hackathon Context</h4>
-              <p style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>
-                Cognizant NiT Hackathon — Use Case #7 (Gen AI / Biomedical Search).
+              <h4 className="footer-heading">Hackathon Team</h4>
+              <p style={{ fontSize: '0.76rem', color: '#60A5FA', fontWeight: 700, marginBottom: '0.4rem' }}>
+                Team Members & Roles:
               </p>
-              <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <span>Built with precision</span> <Heart size={12} className="text-rose-500" style={{ fill: '#F43F5E' }} /> <span>by Julfikar Ali</span>
+              <div className="flex flex-col gap-1 text-[11px]" style={{ color: '#E2E8F0' }}>
+                <div><span className="font-bold text-blue-300">Kunal Kumar Das</span> <span className="text-slate-400">— Team Leader & Backend</span></div>
+                <div><span className="font-bold text-indigo-300">Julfikar Ali</span> <span className="text-slate-400">— Project Leader, Full-Stack Gen AI & Deployment</span></div>
+                <div><span className="font-bold text-slate-200">Koyna Jha</span> <span className="text-slate-400">— NLP & ML</span></div>
+                <div><span className="font-bold text-slate-200">Khustar Jamal Ansari</span> <span className="text-slate-400">— API Integration</span></div>
+                <div><span className="font-bold text-slate-200">Kuntal Paul</span> <span className="text-slate-400">— Frontend</span></div>
+                <div><span className="font-bold text-slate-200">Mamon Seikh</span> <span className="text-slate-400">— Biomedical Data & Eval</span></div>
+              </div>
+              <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.6rem', fontSize: '0.75rem' }}>
+                <span>Built for Hackathon with</span> <Heart size={11} className="text-rose-500" style={{ fill: '#F43F5E' }} />
               </div>
             </div>
           </div>
 
           <div className="footer-bottom-bar">
-            <span>&copy; {new Date().getFullYear()} BioSearch. All rights reserved.</span>
+            <span>&copy; {new Date().getFullYear()} BioSearch — Next-Gen PubMed Semantic Search.</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <Globe size={13} /> PubMed E-Utilities API Connected
-              </span>
+              <a
+                href="https://www.ncbi.nlm.nih.gov/home/develop/api/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#94A3B8', textDecoration: 'none' }}
+                className="hover:text-blue-400 transition-colors"
+              >
+                <Globe size={13} /> NCBI E-Utilities API Connected
+              </a>
             </div>
           </div>
         </div>
