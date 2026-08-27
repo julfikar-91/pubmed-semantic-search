@@ -1,26 +1,29 @@
 # PubMed Semantic Search Engine 🧬
 
-An AI-powered 8-step semantic search engine and literature discovery platform for PubMed medical research articles. Built with a **FastAPI** backend pipeline and a modern **React + TypeScript** visual search interface.
+An AI-powered semantic search engine and literature discovery platform for PubMed medical research articles. Built with a **FastAPI** backend pipeline integrating **med_search** GenAI logic, and a modern **React + TypeScript** visual search interface.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features & `med_search` Pipeline Architecture
 
-1. **8-Step NLP & Vector Search Pipeline**:
-   - **Step 1-2**: Biomedical Concept & Named Entity Extraction (Diseases, Therapies, Genes, Outcomes).
-   - **Step 3**: Clinical Synonym Expansion via LLM (OpenAI / Gemini) or Medical Ontology Dictionary.
-   - **Step 4**: MeSH Guardrail Validation checking terms against official NCBI Medical Subject Headings.
-   - **Step 5**: Automatic PubMed Boolean Query Builder using `[Mesh]` and `[Title/Abstract]` field tags.
-   - **Step 6**: Async NCBI Entrez ESearch & EFetch API client with caching and resilience fallbacks.
-   - **Step 7**: Dense Vector Embeddings using `SentenceTransformers` (`all-MiniLM-L6-v2`) and FAISS store.
-   - **Step 8**: Calibrated 5-Factor Hybrid Relevance Scoring (40% Semantic Vector + 25% BM25 Lexical + 15% MeSH + 10% Title + 10% Coverage).
+1. **Integrated `med_search` Pipeline**:
+   - **User Query Validation & Cleaning (`take_user_query`, `clean_and_preprocess_query`)**: Validates input length and sanitizes special characters while preserving medical hyphens and alphanumeric structure.
+   - **GenAI LLM Query Expansion (`expand_query_with_llm`)**: Priority multi-tier LLM expansion utilizing **Gemini 2.5 Flash** (free tier API) -> **Anthropic Claude** -> Local medical ontology fallback dictionary (`_FALLBACK_SYNONYMS`).
+   - **PubMed Entrez ESearch & EFetch XML Retrieval (`build_pubmed_query_params`, `search_pubmed_esearch`, `fetch_articles_efetch`)**: Builds optimized NCBI Entrez query parameters (with `[Journal]`, `[Publication Type]`, date ranges) and parses authentic XML PubmedArticle elements (Title, Abstract, Journal, Year).
+   - **SentenceTransformers Dense Embeddings (`generate_embeddings`)**: Lazy loads and caches the `all-MiniLM-L6-v2` embedding model with vector normalization.
+   - **Cosine Matrix Similarity (`compute_similarity_scores`)**: Calculates dot product cosine similarity (`abstract_embeddings @ query_embedding`).
+   - **Score Reranking & Filtering (`rerank_results`, `apply_filters`)**: High-to-low relevance sorting with journal substring and publication date filters.
+   - **Snippet Display & Link Formatting (`format_results_for_display`)**: Formats 280-character snippets and direct PubMed article URLs (`https://pubmed.ncbi.nlm.nih.gov/{pmid}/`).
+   - **In-Memory TTL Caching (`cache_results`)**: 30-minute in-memory result caching.
+   - **RAGAS-Style Faithfulness & Relevancy Evaluation (`evaluate_faithfulness_and_relevancy`)**: Computes answer relevancy (mean similarity score) and faithfulness proxy metrics.
+   - **Citation Verification (`verify_citation`)**: Checks snippet authenticity against source article abstracts.
 
 2. **Modern Medical Search Interface**:
    - Live 8-step pipeline visualizer showing step durations and execution logs.
    - Real-time Hybrid Alpha weight slider (Semantic Vector vs PubMed Lexical ratio).
    - Medical preset query suggestions.
    - Relevance match badges with score breakdown tooltips (Semantic % vs Lexical %).
-   - Article abstract view toggles, MeSH tags display, and direct PubMed links.
+   - Article abstract view toggles, MeSH tags display, citation verification badges, and direct PubMed links.
    - Generated PubMed Boolean query code inspector tab.
 
 ---
@@ -29,48 +32,49 @@ An AI-powered 8-step semantic search engine and literature discovery platform fo
 
 ```
 pubmed-semantic-search/
+├── med_search/
+│   ├── app.py                      # Original standalone med_search GenAI script & CLI
+│   └── requirements.txt            # med_search standalone dependencies
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                 # FastAPI app, CORS, router mount
+│   │   ├── main.py                 # FastAPI app, CORS, lifespan startup
 │   │   ├── api/
-│   │   │   └── search.py           # POST /api/search, GET /api/health
+│   │   │   └── search.py           # POST /api/search, GET /api/health, GET /api/evaluate
 │   │   ├── pipeline/
-│   │   │   ├── extract_concepts.py     # step 1-2 (NER extraction)
-│   │   │   ├── expand_synonyms.py      # step 3 (LLM / Ontology expansion)
-│   │   │   ├── validate_mesh.py        # step 4 (MeSH guardrail)
-│   │   │   ├── build_query.py          # step 5 (PubMed Boolean query builder)
-│   │   │   ├── pubmed_client.py        # step 6 (NCBI ESearch / EFetch API)
-│   │   │   ├── embed_and_score.py      # step 7 (SentenceTransformers & FAISS)
-│   │   │   └── rerank.py               # step 8 (RRF hybrid reranking)
+│   │   │   ├── med_search_pipeline.py  # Integrated med_search pipeline functions
+│   │   │   ├── extract_concepts.py     # NER concept extraction
+│   │   │   ├── expand_synonyms.py      # MeSH + LLM synonym expansion
+│   │   │   ├── validate_mesh.py        # MeSH taxonomy guardrail validation
+│   │   │   ├── build_query.py          # PubMed Boolean query builder
+│   │   │   ├── pubmed_client.py        # NCBI ESearch / EFetch API client
+│   │   │   ├── embed_and_score.py      # SentenceTransformers & vector scoring
+│   │   │   ├── rerank.py               # Calibrated hybrid reranking
+│   │   │   └── spell_correct.py        # Biomedical MeSH dictionary fuzzy spell correction
 │   │   ├── services/
-│   │   │   ├── cache_service.py    # In-memory TTL cache
-│   │   │   └── vector_store.py     # FAISS vector store with numpy fallback
+│   │   │   ├── cache_service.py    # Multi-tier LRU cache
+│   │   │   └── vector_store.py     # FAISS / numpy vector store
 │   │   ├── models/
-│   │   │   └── schemas.py          # Pydantic request/response models
-│   │   └── config.py               # Env settings & configuration
+│   │   │   └── schemas.py          # Pydantic models (Article, SearchResponse, SearchFilter)
+│   │   └── config.py               # Env settings & LLM configuration
 │   ├── tests/
-│   │   └── test_pipeline.py        # Pipeline unit tests
-│   ├── requirements.txt            # Python dependencies
-│   └── .env.example                # Environment variables template
+│   │   ├── test_med_search_pipeline.py  # med_search pipeline unit tests
+│   │   ├── test_api.py             # FastAPI router & endpoint tests
+│   │   ├── test_e2e_integration.py # End-to-end integration tests
+│   │   ├── test_mesh_guardrail.py  # MeSH validation tests
+│   │   ├── test_pipeline.py        # Core pipeline tests
+│   │   ├── test_resilience.py      # HTTP retry & cache resilience tests
+│   │   └── test_spell_check_mesh.py # Spell correction tests
+│   └── requirements.txt            # Backend Python dependencies
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── SearchBar.tsx       # Search bar & presets
-│   │   │   ├── ResultCard.tsx      # Medical paper card
-│   │   │   ├── FilterPanel.tsx     # Hybrid weight & filters
-│   │   │   ├── RelevanceBadge.tsx  # Match score badge & breakdown
-│   │   │   └── LoadingState.tsx    # 8-step pipeline visualizer
-│   │   ├── pages/
-│   │   │   └── SearchPage.tsx      # Main search page layout
+│   │   ├── components/             # React search components
+│   │   ├── pages/                  # Main page views (Search, Evaluation, Docs, About)
 │   │   ├── api/
-│   │   │   └── searchApi.ts        # API client & fallback simulation
+│   │   │   └── searchApi.ts        # Frontend API client
 │   │   ├── types/
 │   │   │   └── index.ts           # TypeScript interfaces
-│   │   ├── App.tsx                 # Root component & architecture modal
-│   │   ├── main.tsx                # React entry
-│   │   └── index.css               # Modern dark theme design system
-│   ├── index.html                  # HTML entry
-│   └── package.json                # Frontend dependencies & Vite config
+│   │   └── App.tsx                 # Root React application
+│   └── package.json                # Frontend dependencies
 └── README.md
 ```
 
@@ -87,10 +91,11 @@ cd backend
 pip install -r requirements.txt
 
 # Start FastAPI server
-uvicorn app.main:app --reload --port 8000
+py -m uvicorn app.main:app --reload --port 8000
 ```
 - Swagger API Docs: `http://localhost:8000/docs`
 - Health Check: `http://localhost:8000/api/health`
+- Evaluation Harness: `http://localhost:8000/api/evaluate`
 
 ### 2. Frontend Setup (React + Vite)
 
@@ -109,9 +114,10 @@ npm run dev
 
 ## 🧪 Running Tests
 
-To run the backend test suite:
+To run the complete backend test suite (41 tests):
 
 ```bash
 cd backend
-python -m pytest tests/test_pipeline.py
+py -m pytest -p anyio -p no:httpbin
 ```
+

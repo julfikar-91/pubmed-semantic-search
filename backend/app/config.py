@@ -13,20 +13,23 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # NCBI Entrez PubMed API settings
-    NCBI_API_KEY: Optional[str] = ""
-    NCBI_EMAIL: str = "researcher@example.com"
+    NCBI_API_KEY: Optional[str] = os.environ.get("NCBI_API_KEY", "")
+    NCBI_EMAIL: str = os.environ.get("NCBI_EMAIL", "jhakoyna@example.com")
 
-    # LLM Settings (OpenAI / Gemini / Mock)
-    LLM_PROVIDER: str = "mock"  # "openai", "gemini", "mock"
+    # LLM Settings (Gemini / Anthropic / Mock)
+    LLM_PROVIDER: str = "gemini"
     OPENAI_API_KEY: Optional[str] = ""
-    GEMINI_API_KEY: Optional[str] = ""
+    GEMINI_API_KEY: Optional[str] = os.environ.get("GEMINI_API_KEY", "")
+    ANTHROPIC_API_KEY: Optional[str] = os.environ.get("ANTHROPIC_API_KEY", "")
+    GEMINI_MODEL_NAME: str = "gemini-2.5-flash"
 
     # Vector store & Embedding settings
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     VECTOR_DIMENSION: int = 384
 
     # Cache settings
-    CACHE_TTL_SECONDS: int = 3600  # 1 hour
+    CACHE_TTL_SECONDS: int = 1800  # 30 minutes
     MAX_CACHE_SIZE: int = 1000
 
     # CORS Settings

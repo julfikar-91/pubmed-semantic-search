@@ -24,32 +24,35 @@ HALLUCINATED_TERMS = [
     ExpandedSynonym(term="anti-aging telomere multiplier", synonyms=["telomere pill"], mesh_heading="Telomere Elongation Therapy Complex"),
 ]
 
-@pytest.mark.asyncio
-async def test_mesh_guardrail_accepts_valid_terms():
+def test_mesh_guardrail_accepts_valid_terms():
     """Verify that legitimate medical terms are approved with valid MeSH IDs."""
-    results = await validate_mesh(VALID_MESH_CASES, enabled=True)
-    assert len(results) == len(VALID_MESH_CASES)
-    for res in results:
-        assert res.is_valid is True, f"Expected {res.original_term} to be valid"
-        assert res.mesh_heading is not None
-        assert res.mesh_unique_id is not None or "Verified" in res.status_note
+    async def _run():
+        results = await validate_mesh(VALID_MESH_CASES, enabled=True)
+        assert len(results) == len(VALID_MESH_CASES)
+        for res in results:
+            assert res.is_valid is True, f"Expected {res.original_term} to be valid"
+            assert res.mesh_heading is not None
+            assert res.mesh_unique_id is not None or "Verified" in res.status_note
+    asyncio.run(_run())
 
-@pytest.mark.asyncio
-async def test_mesh_guardrail_rejects_hallucinations():
+def test_mesh_guardrail_rejects_hallucinations():
     """Verify that LLM-hallucinated or non-existent medical terms are strictly rejected."""
-    results = await validate_mesh(HALLUCINATED_TERMS, enabled=True)
-    assert len(results) == len(HALLUCINATED_TERMS)
-    for res in results:
-        assert res.is_valid is False, f"Guardrail failed! Hallucinated term was accepted: '{res.mesh_heading}'"
-        assert "Rejected" in res.status_note
+    async def _run():
+        results = await validate_mesh(HALLUCINATED_TERMS, enabled=True)
+        assert len(results) == len(HALLUCINATED_TERMS)
+        for res in results:
+            assert res.is_valid is False, f"Guardrail failed! Hallucinated term was accepted: '{res.mesh_heading}'"
+            assert "Rejected" in res.status_note
+    asyncio.run(_run())
 
-@pytest.mark.asyncio
-async def test_mesh_guardrail_disabled_passthrough():
+def test_mesh_guardrail_disabled_passthrough():
     """Verify that disabling guardrail permits passthrough with explanatory note."""
-    results = await validate_mesh(HALLUCINATED_TERMS, enabled=False)
-    for res in results:
-        assert res.is_valid is True
-        assert "Guardrail disabled" in res.status_note
+    async def _run():
+        results = await validate_mesh(HALLUCINATED_TERMS, enabled=False)
+        for res in results:
+            assert res.is_valid is True
+            assert "Guardrail disabled" in res.status_note
+    asyncio.run(_run())
 
 if __name__ == "__main__":
     asyncio.run(test_mesh_guardrail_accepts_valid_terms())

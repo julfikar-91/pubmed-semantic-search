@@ -5,6 +5,10 @@ from typing import List, Optional, Dict, Any
 class SearchFilter(BaseModel):
     date_from: Optional[str] = Field(default=None, description="Start date (YYYY/MM/DD)")
     date_to: Optional[str] = Field(default=None, description="End date (YYYY/MM/DD)")
+    start_date: Optional[str] = Field(default=None, description="Start date (e.g. 2020/01/01)")
+    end_date: Optional[str] = Field(default=None, description="End date (e.g. 2026/12/31)")
+    journal: Optional[str] = Field(default=None, description="Journal name filter")
+    study_type: Optional[str] = Field(default=None, description="Publication type e.g. Randomized Controlled Trial")
     pub_types: Optional[List[str]] = Field(default=[], description="List of publication types")
     min_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Minimum relevance score filter")
     max_results: int = Field(default=20, ge=1, le=100, description="Maximum results to return")
@@ -37,20 +41,24 @@ class MeSHValidationResult(BaseModel):
 
 class Article(BaseModel):
     pmid: str
-    title: str
-    abstract: str
+    title: str = ""
+    abstract: str = ""
+    snippet: str = ""
     authors: List[str] = []
     journal: str = ""
     pub_date: str = ""
     doi: Optional[str] = None
     mesh_terms: List[str] = []
     url: str = ""
+    similarity_score: float = 0.0
+    relevance_score: float = 0.0
     semantic_score: float = 0.0
     bm25_score: float = 0.0
     lexical_score: float = 0.0
     final_score: float = 0.0
     explanation: str = ""
     pub_types: List[str] = []
+    citation_verified: bool = True
 
 class RetrievalSummary(BaseModel):
     total_articles: int = 3842
@@ -86,3 +94,6 @@ class SearchResponse(BaseModel):
     pipeline_logs: List[PipelineStepLog] = []
     execution_time_ms: float = 0.0
     cached: bool = False
+    metrics: Dict[str, Any] = {}
+    from_cache: bool = False
+    elapsed_seconds: float = 0.0

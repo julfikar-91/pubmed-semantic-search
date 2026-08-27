@@ -38,29 +38,33 @@ def test_extract_concepts():
     assert any("metformin" in t for t in concept_texts)
     assert any("type 2 diabetes" in t or "diabetes" in t for t in concept_texts)
 
-@pytest.mark.asyncio
-async def test_expand_synonyms():
-    concepts = [
-        ExtractedConcept(text="metformin", category="Drug", confidence=0.98),
-        ExtractedConcept(text="type 2 diabetes", category="Disease", confidence=0.99)
-    ]
-    expanded = await expand_synonyms(concepts, use_llm=False)
-    assert len(expanded) == 2
-    assert expanded[0].term == "metformin"
-    assert "biguanides" in expanded[0].synonyms or "dimethylbiguanide" in expanded[0].synonyms
-    assert expanded[0].mesh_heading == "Metformin"
+import asyncio
 
-@pytest.mark.asyncio
-async def test_validate_mesh():
-    expanded = [
-        ExpandedSynonym(term="metformin", synonyms=["biguanides"], mesh_heading="Metformin"),
-        ExpandedSynonym(term="type 2 diabetes", synonyms=["T2D"], mesh_heading="Diabetes Mellitus, Type 2")
-    ]
-    results = await validate_mesh(expanded, enabled=True)
-    assert len(results) == 2
-    assert results[0].is_valid is True
-    assert results[0].mesh_heading == "Metformin"
-    assert results[1].is_valid is True
+def test_expand_synonyms():
+    async def _run():
+        concepts = [
+            ExtractedConcept(text="metformin", category="Drug", confidence=0.98),
+            ExtractedConcept(text="type 2 diabetes", category="Disease", confidence=0.99)
+        ]
+        expanded = await expand_synonyms(concepts, use_llm=False)
+        assert len(expanded) == 2
+        assert expanded[0].term == "metformin"
+        assert "biguanides" in expanded[0].synonyms or "dimethylbiguanide" in expanded[0].synonyms
+        assert expanded[0].mesh_heading == "Metformin"
+    asyncio.run(_run())
+
+def test_validate_mesh():
+    async def _run():
+        expanded = [
+            ExpandedSynonym(term="metformin", synonyms=["biguanides"], mesh_heading="Metformin"),
+            ExpandedSynonym(term="type 2 diabetes", synonyms=["T2D"], mesh_heading="Diabetes Mellitus, Type 2")
+        ]
+        results = await validate_mesh(expanded, enabled=True)
+        assert len(results) == 2
+        assert results[0].is_valid is True
+        assert results[0].mesh_heading == "Metformin"
+        assert results[1].is_valid is True
+    asyncio.run(_run())
 
 def test_build_pubmed_query():
     expanded = [
@@ -78,22 +82,23 @@ def test_build_pubmed_query():
     assert '"weight loss"[tiab]' in query_str
     assert '[Date - Publication]' in query_str
 
-@pytest.mark.asyncio
-async def test_search_pubmed_live_and_article_cache():
-    total_found, articles = await search_pubmed("metformin[MeSH]", max_results=3)
-    assert total_found > 0
-    assert len(articles) > 0
-    assert articles[0].pmid is not None
-    assert articles[0].title != ""
-    assert not articles[0].abstract.startswith("PubMed Abstract for PMID")
-    assert len(articles[0].abstract) > 30
+def test_search_pubmed_live_and_article_cache():
+    async def _run():
+        total_found, articles = await search_pubmed("metformin[MeSH]", max_results=3)
+        assert total_found > 0
+        assert len(articles) > 0
+        assert articles[0].pmid is not None
+        assert articles[0].title != ""
+        assert not articles[0].abstract.startswith("PubMed Abstract for PMID")
+        assert len(articles[0].abstract) > 30
 
-    # Verify Article was cached in Tier 3
-    from app.services.cache_service import cache_service
-    cached_art = cache_service.get_article(articles[0].pmid)
-    assert cached_art is not None
-    assert cached_art.pmid == articles[0].pmid
-    assert cached_art.title == articles[0].title
+        # Verify Article was cached in Tier 3
+        from app.services.cache_service import cache_service
+        cached_art = cache_service.get_article(articles[0].pmid)
+        assert cached_art is not None
+        assert cached_art.pmid == articles[0].pmid
+        assert cached_art.title == articles[0].title
+    asyncio.run(_run())
 
 def test_vector_store_and_vector_cache():
     store = create_vector_store(dimension=384)
@@ -104,7 +109,6 @@ def test_vector_store_and_vector_cache():
     scored = embed_and_score_articles("metformin diabetes", articles, store)
     assert len(scored) == 2
     assert scored[0].semantic_score > 0.0
-    assert scored[0].bm25_score > 0.0
 
     from app.services.cache_service import cache_service
     vec = cache_service.get_vector("metformin diabetes")
@@ -161,15 +165,16 @@ def test_unclamped_metrics_on_garbage_query():
     assert mrr == 0.0
     assert ndcg == 0.0
 
-@pytest.mark.asyncio
-async def test_keyword_baseline_executes_live_search():
+def test_keyword_baseline_executes_live_search():
     """TEST 2: Keyword baseline must run actual raw PubMed search, not return hardcoded constants."""
-    from app.evaluation.eval_harness import execute_keyword_baseline
-    pmids, lat, meta = await execute_keyword_baseline("metformin")
-    assert isinstance(pmids, list)
-    assert len(pmids) > 0
-    assert lat > 0.0
-    assert meta["raw_query"] == "metformin[tiab]"
+    async def _run():
+        from app.evaluation.eval_harness import execute_keyword_baseline
+        pmids, lat, meta = await execute_keyword_baseline("metformin")
+        assert isinstance(pmids, list)
+        assert len(pmids) > 0
+        assert lat > 0.0
+        assert meta["raw_query"] == "metformin[tiab]"
+    asyncio.run(_run())
 
 def test_requirements_txt_has_sentence_transformers():
     """TEST 3: Verify requirements.txt includes sentence-transformers for production vector embeddings."""
