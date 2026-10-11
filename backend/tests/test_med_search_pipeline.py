@@ -35,7 +35,7 @@ def test_clean_and_preprocess_query():
     assert "heart attack risk factors 2026" in cleaned
 
 def test_expand_query_with_llm_fallback():
-    expanded = expand_query_with_llm("heart attack", gemini_api_key="", anthropic_api_key="")
+    expanded = expand_query_with_llm("heart attack", gemini_api_key="")
     assert "myocardial infarction" in expanded or "acute coronary syndrome" in expanded
 
 def test_build_pubmed_query_params():

@@ -227,9 +227,9 @@ async def _expand_single_concept(concept: ExtractedConcept, use_llm: bool = True
             mesh_candidate = m_entry.get("mesh_heading")
 
     # 4. If not resolved offline, try LLM expansion with strict resilience & fast timeout
-    if not synonyms and use_llm and settings.LLM_PROVIDER in ["openai", "gemini"]:
+    if not synonyms and use_llm and settings.LLM_PROVIDER == "gemini":
         try:
-            llm_res = await asyncio.wait_for(_call_llm_synonym_expansion(concept.text), timeout=4.0)
+            llm_res = await asyncio.wait_for(_call_llm_synonym_expansion(concept.text), timeout=3.5)
             if llm_res.get("synonyms"):
                 synonyms = list(dict.fromkeys(synonyms + llm_res["synonyms"]))
             if llm_res.get("mesh_heading"):
@@ -261,55 +261,42 @@ async def expand_synonyms(concepts: List[ExtractedConcept], use_llm: bool = True
     return await asyncio.gather(*tasks)
 
 async def _call_llm_synonym_expansion(term: str) -> Dict:
-    """Fast non-blocking LLM synonym expansion with retry & backoff."""
+    """Fast non-blocking Google Gemini synonym expansion with retry & backoff."""
     client = HttpClientPool.get_client()
 
     if settings.LLM_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+            model_name = getattr(settings, "GEMINI_MODEL_NAME", "gemini-2.5-flash")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             prompt = (
                 f"Medical expert: for term '{term}', return JSON with: "
                 f"'synonyms' (list of 3 clinical synonyms) and 'mesh_heading'. Return JSON only."
             )
+            headers = {
+                "x-goog-api-key": settings.GEMINI_API_KEY,
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json"}
+            }
             resp = await execute_with_retry(
                 lambda: client.post(
                     url,
-                    json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {"responseMimeType": "application/json"}
-                    },
-                    timeout=3.5
+                    headers=headers,
+                    json=payload,
+                    timeout=3.0
                 ),
                 max_retries=2,
-                initial_delay=0.2
+                initial_delay=0.15
             )
             if resp.status_code == 200:
                 data = resp.json()
-                content_str = data["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(content_str)
+                candidates = data.get("candidates", [])
+                if candidates:
+                    content_str = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
+                    return json.loads(content_str)
         except Exception as ex:
             logger.debug(f"Gemini API call error: {ex}")
-
-    elif settings.LLM_PROVIDER == "openai" and settings.OPENAI_API_KEY:
-        try:
-            response = await execute_with_retry(
-                lambda: client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
-                    json={
-                        "model": "gpt-3.5-turbo",
-                        "messages": [{"role": "user", "content": f"Given medical term '{term}', return JSON with: 'synonyms' and 'mesh_heading'."}],
-                        "response_format": {"type": "json_object"}
-                    },
-                    timeout=1.4
-                ),
-                max_retries=2,
-                initial_delay=0.2
-            )
-            if response.status_code == 200:
-                content = response.json()["choices"][0]["message"]["content"]
-                return json.loads(content)
-        except Exception as ex:
-            logger.debug(f"OpenAI API error: {ex}")
 
     return {}

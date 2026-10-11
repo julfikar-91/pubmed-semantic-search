@@ -143,12 +143,14 @@ async def _efetch_xml(pmid_list: List[str]) -> Dict[str, Article]:
 
                     # 2. Structured Real Abstract
                     abstract_parts: List[str] = []
-                    for ab in article_elem.findall(".//MedlineCitation/Article/Abstract/AbstractText"):
+                    abstract_nodes = article_elem.findall(".//MedlineCitation/Article/Abstract/AbstractText")
+                    has_multiple_abstract_nodes = len(abstract_nodes) > 1
+                    for ab in abstract_nodes:
                         label = ab.get("Label")
                         ab_text = "".join(ab.itertext()).strip()
                         if not ab_text:
                             continue
-                        if label and len(article_elem.findall(".//MedlineCitation/Article/Abstract/AbstractText")) > 1:
+                        if label and has_multiple_abstract_nodes:
                             abstract_parts.append(f"{label.upper()}: {ab_text}")
                         else:
                             abstract_parts.append(ab_text)

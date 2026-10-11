@@ -21,7 +21,6 @@ NCBI_EMAIL = getattr(settings, "NCBI_EMAIL", "jhakoyna@example.com")
 NCBI_API_KEY = getattr(settings, "NCBI_API_KEY", "")
 
 GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", "")
-ANTHROPIC_API_KEY = getattr(settings, "ANTHROPIC_API_KEY", "")
 
 ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -121,8 +120,9 @@ _EXPANSION_PROMPT_TEMPLATE = (
 )
 
 
+@functools.lru_cache(maxsize=256)
 def _expand_with_gemini(query: str, api_key: str) -> Optional[str]:
-    """Gemini (FREE, no credit card) se query expand karta hai."""
+    """Google Gemini (FREE tier / Cloud) se query expand karta hai with LRU caching."""
     try:
         response = requests.post(
             GEMINI_GENERATE_URL,
@@ -139,7 +139,7 @@ def _expand_with_gemini(query: str, api_key: str) -> Optional[str]:
                     }
                 ]
             },
-            timeout=15,
+            timeout=5,
         )
         response.raise_for_status()
         data = response.json()
@@ -154,60 +154,19 @@ def _expand_with_gemini(query: str, api_key: str) -> Optional[str]:
         return None
 
 
-def _expand_with_anthropic(query: str, api_key: str) -> Optional[str]:
-    """Anthropic (paid) se query expand karta hai."""
-    try:
-        response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-sonnet-4-6",
-                "max_tokens": 200,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": _EXPANSION_PROMPT_TEMPLATE.format(query=query),
-                    }
-                ],
-            },
-            timeout=15,
-        )
-        response.raise_for_status()
-        data = response.json()
-        expanded = "".join(
-            block.get("text", "") for block in data.get("content", [])
-            if block.get("type") == "text"
-        ).strip()
-        return expanded or None
-    except Exception as exc:
-        log_and_monitor("Anthropic expansion failed", error=str(exc))
-        return None
-
-
 def expand_query_with_llm(
     query: str,
     gemini_api_key: str = GEMINI_API_KEY,
-    anthropic_api_key: str = ANTHROPIC_API_KEY,
+    **kwargs: Any,
 ) -> str:
     """
-    LLM se query ka intent samajh kar synonyms + MeSH-style terms add
-    karwata hai. Priority: Gemini (free) -> Anthropic (paid) -> local
-    fallback dictionary. Koi bhi key kaam na kare to fallback use hota hai.
+    Google Gemini LLM se query ka intent samajh kar synonyms + MeSH-style terms add
+    karwata hai. Priority: Google Gemini -> local fallback dictionary.
     """
     if gemini_api_key:
         expanded = _expand_with_gemini(query, gemini_api_key)
         if expanded:
             log_and_monitor("Query expansion: Gemini used", expanded=expanded)
-            return expanded
-
-    if anthropic_api_key:
-        expanded = _expand_with_anthropic(query, anthropic_api_key)
-        if expanded:
-            log_and_monitor("Query expansion: Anthropic used", expanded=expanded)
             return expanded
 
     log_and_monitor("Query expansion: fallback dictionary used")
@@ -261,48 +220,91 @@ def search_pubmed_esearch(params: Dict) -> List[str]:
 # Function 6: fetch_articles_efetch()
 # --------------------------------------------------------------------------
 def fetch_articles_efetch(pmids: List[str]) -> List[Article]:
-    """EFetch API se un PMIDs ka actual content (title/abstract/journal/date) laata hai."""
+    """EFetch API se un PMIDs ka actual content (title/abstract/journal/date) laata hai with LRU caching."""
     if not pmids:
         return []
 
-    params = {
-        "db": "pubmed",
-        "id": ",".join(pmids),
-        "retmode": "xml",
-        "email": NCBI_EMAIL,
-    }
-    if NCBI_API_KEY:
-        params["api_key"] = NCBI_API_KEY
+    cached_articles: Dict[str, Article] = {}
+    uncached_pmids: List[str] = []
 
-    response = requests.get(EFETCH_URL, params=params, timeout=20)
-    response.raise_for_status()
+    try:
+        from app.services.cache_service import cache_service
+        for pmid in pmids:
+            cached_art = cache_service.get_article(pmid)
+            if cached_art:
+                cached_articles[pmid] = Article(
+                    pmid=cached_art.pmid,
+                    title=cached_art.title,
+                    abstract=cached_art.abstract,
+                    journal=cached_art.journal,
+                    pub_date=cached_art.pub_date,
+                    similarity_score=getattr(cached_art, "similarity_score", 0.0),
+                )
+            else:
+                uncached_pmids.append(pmid)
+    except Exception:
+        uncached_pmids = list(pmids)
 
-    root = ET.fromstring(response.content)
-    articles: List[Article] = []
+    newly_fetched: Dict[str, Article] = {}
+    if uncached_pmids:
+        params = {
+            "db": "pubmed",
+            "id": ",".join(uncached_pmids),
+            "retmode": "xml",
+            "email": NCBI_EMAIL,
+        }
+        if NCBI_API_KEY:
+            params["api_key"] = NCBI_API_KEY
 
-    for art in root.findall(".//PubmedArticle"):
-        pmid = art.findtext(".//PMID", default="")
-        title = art.findtext(".//ArticleTitle", default="")
-        journal = art.findtext(".//Journal/Title", default="")
-        pub_year = art.findtext(".//JournalIssue/PubDate/Year", default="")
+        try:
+            response = requests.get(EFETCH_URL, params=params, timeout=20)
+            response.raise_for_status()
 
-        abstract_parts = [
-            (node.text or "") for node in art.findall(".//AbstractText")
-        ]
-        abstract = " ".join(abstract_parts).strip()
+            root = ET.fromstring(response.content)
+            for art in root.findall(".//PubmedArticle"):
+                pmid = art.findtext(".//PMID", default="")
+                if not pmid:
+                    continue
+                title = art.findtext(".//ArticleTitle", default="")
+                journal = art.findtext(".//Journal/Title", default="")
+                pub_year = art.findtext(".//JournalIssue/PubDate/Year", default="")
 
-        articles.append(
-            Article(
-                pmid=pmid,
-                title=title,
-                abstract=abstract,
-                journal=journal,
-                pub_date=pub_year,
-            )
-        )
+                abstract_parts = [
+                    (node.text or "") for node in art.findall(".//AbstractText")
+                ]
+                abstract = " ".join(abstract_parts).strip()
 
-    log_and_monitor("EFetch complete", articles_fetched=len(articles))
-    return articles
+                parsed_art = Article(
+                    pmid=pmid,
+                    title=title,
+                    abstract=abstract,
+                    journal=journal,
+                    pub_date=pub_year,
+                )
+                newly_fetched[pmid] = parsed_art
+                try:
+                    from app.services.cache_service import cache_service
+                    from app.models.schemas import Article as SchemaArticle
+                    cache_service.set_article(pmid, SchemaArticle(
+                        pmid=pmid,
+                        title=title,
+                        abstract=abstract,
+                        journal=journal,
+                        pub_date=pub_year,
+                    ))
+                except Exception:
+                    pass
+        except Exception as exc:
+            log_and_monitor("EFetch request failed", error=str(exc))
+
+    results: List[Article] = []
+    for pmid in pmids:
+        art = cached_articles.get(pmid) or newly_fetched.get(pmid)
+        if art:
+            results.append(art)
+
+    log_and_monitor("EFetch complete", articles_fetched=len(results), cached_hits=len(cached_articles))
+    return results
 
 
 # --------------------------------------------------------------------------

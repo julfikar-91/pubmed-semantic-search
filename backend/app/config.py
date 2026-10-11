@@ -16,11 +16,9 @@ class Settings(BaseSettings):
     NCBI_API_KEY: Optional[str] = os.environ.get("NCBI_API_KEY", "")
     NCBI_EMAIL: str = os.environ.get("NCBI_EMAIL", "jhakoyna@example.com")
 
-    # LLM Settings (Gemini / Anthropic / Mock)
+    # LLM Settings (Google Gemini)
     LLM_PROVIDER: str = "gemini"
-    OPENAI_API_KEY: Optional[str] = ""
     GEMINI_API_KEY: Optional[str] = os.environ.get("GEMINI_API_KEY", "")
-    ANTHROPIC_API_KEY: Optional[str] = os.environ.get("ANTHROPIC_API_KEY", "")
     GEMINI_MODEL_NAME: str = "gemini-2.5-flash"
 
     # Vector store & Embedding settings

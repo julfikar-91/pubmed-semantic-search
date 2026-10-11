@@ -122,7 +122,7 @@ async def perform_search(request: SearchRequest):
             details=f"Extracted {len(concepts)} biomedical entities ({', '.join([f'{c.text} [{c.category}]' for c in concepts[:3]])})"
         ))
 
-        # Step 3: LLM & MeSH Synonym Expansion (med_search Gemini/Anthropic/Fallback priority)
+        # Step 3: LLM & MeSH Synonym Expansion (Google Gemini / Fallback priority)
         t0 = time.time()
         llm_expanded_query = expand_query_with_llm(cleaned_query or effective_query)
         expanded_synonyms = await expand_synonyms(concepts, use_llm=request.use_llm_expansion)
@@ -204,6 +204,7 @@ async def perform_search(request: SearchRequest):
             total_found = len(med_articles)
             fetched_articles = []
             for ma in med_articles:
+                cached_full = cache_service.get_article(ma.pmid)
                 fetched_articles.append(Article(
                     pmid=ma.pmid,
                     title=ma.title,
@@ -211,7 +212,10 @@ async def perform_search(request: SearchRequest):
                     journal=ma.journal,
                     pub_date=ma.pub_date,
                     similarity_score=ma.similarity_score,
-                    url=f"https://pubmed.ncbi.nlm.nih.gov/{ma.pmid}/"
+                    url=f"https://pubmed.ncbi.nlm.nih.gov/{ma.pmid}/",
+                    mesh_terms=cached_full.mesh_terms if cached_full else [],
+                    pub_types=cached_full.pub_types if cached_full else ["Journal Article"],
+                    authors=cached_full.authors if cached_full else []
                 ))
 
         dt_ncbi = round((time.time() - t0) * 1000, 2)
