@@ -10,6 +10,10 @@ logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
+# httpx includes complete request URLs in debug records. Those URLs can carry
+# the NCBI `api_key` query parameter, so keep transport logging below INFO.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager

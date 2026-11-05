@@ -50,10 +50,9 @@ export const SearchPage: React.FC = () => {
         use_spell_correction: !bypassSpellCorrection,
         use_llm_expansion: true,
         use_mesh_guardrail: true,
-        hybrid_alpha: 0.6,
       });
       setResponse(res);
-      setActiveStep(7);
+      setActiveStep(8);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to execute search query against PubMed.");
@@ -62,14 +61,7 @@ export const SearchPage: React.FC = () => {
     }
   };
 
-  // Calculate clean local pipeline execution time (excluding external PubMed network delay)
-  const localSteps = (response?.pipeline_logs || []).filter(
-    (s) => s.step_number <= 5 || s.step_number === 8
-  );
-  const localSum = localSteps.reduce((acc, s) => acc + (s.duration_ms || 0), 0);
-  const displayPipelineTimeMs = response?.cached 
-    ? 4.5 
-    : (localSum > 0 ? localSum : (response?.execution_time_ms ? Math.min(response.execution_time_ms, 38.6) : 34.2));
+  const displayPipelineTimeMs = response?.execution_time_ms || 0;
 
   // Pagination Calculations
   const allResults = response?.results || [];
@@ -167,7 +159,7 @@ export const SearchPage: React.FC = () => {
                 <h2 className="results-title font-bold text-slate-900 text-base md:text-lg">
                   Re-ranked Results ({totalItems})
                 </h2>
-                <span className="text-xs text-slate-500 hidden sm:inline">• 100% MeSH Verified</span>
+                <span className="text-xs text-slate-500 hidden sm:inline">• MeSH guardrail applied</span>
               </div>
 
               {/* Clean Pipeline Time Badge */}

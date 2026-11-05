@@ -154,6 +154,28 @@ OFFICIAL_MESH_DATABASE: Dict[str, Dict] = {
     }
 }
 
+
+def _discard_unverified_synonym_candidates(
+    item: ExpandedSynonym,
+    mesh_mgr,
+    clinical_supplement: Dict[str, Dict],
+) -> None:
+    """Keep only user text and locally verified synonym candidates.
+
+    The LLM stage in the reference pipeline is a candidate generator, not an
+    authority.  Candidate strings must therefore be resolvable through the
+    local MeSH dictionary or the maintained clinical supplement before the
+    query builder can emit them as ``[tiab]`` terms.
+    """
+    approved = [item.term]
+    for synonym in item.synonyms:
+        normalized = synonym.strip().lower()
+        if not normalized or normalized == item.term.strip().lower():
+            continue
+        if normalized in clinical_supplement or mesh_mgr.get_mesh_entry(synonym):
+            approved.append(synonym)
+    item.synonyms = list(dict.fromkeys(approved))
+
 async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool = True) -> List[MeSHValidationResult]:
     """
     Step 4: Strict MeSH Guardrail:
@@ -177,6 +199,7 @@ async def validate_mesh(expanded_synonyms: List[ExpandedSynonym], enabled: bool 
     mesh_mgr = MeshDictionaryManager.get_instance()
 
     for item in expanded_synonyms:
+        _discard_unverified_synonym_candidates(item, mesh_mgr, MODERN_CLINICAL_SUPPLEMENT)
         candidate = (item.mesh_heading or item.term).strip()
         cand_lower = candidate.lower()
         matched = None

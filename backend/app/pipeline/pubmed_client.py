@@ -9,6 +9,11 @@ from app.services.metrics import metrics_tracker
 
 logger = logging.getLogger(__name__)
 
+
+class PubMedServiceUnavailableError(RuntimeError):
+    """NCBI accepted the request but its search service could not serve it."""
+
+
 async def search_pubmed(
     pubmed_query: str,
     max_results: int = 20,
@@ -47,11 +52,32 @@ async def _esearch(query: str, max_results: int = 6) -> Tuple[List[str], int]:
 
     client = HttpClientPool.get_client()
 
+    async def request_and_validate():
+        response = await client.get(url, params=params)
+        if response.status_code != 200:
+            return response
+
+        # E-utilities can return HTTP 200 while the PubMed search backend is
+        # unavailable. Treat that payload as transient so the retry policy is
+        # applied instead of silently returning an empty result set.
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise RuntimeError("NCBI ESearch returned invalid JSON") from exc
+
+        service_error = (
+            payload.get("esearchresult", {}).get("ERROR")
+            or payload.get("error")
+        )
+        if service_error:
+            raise RuntimeError(f"NCBI ESearch backend error: {service_error}")
+        return response
+
     try:
         resp = await execute_with_retry(
-            lambda: client.get(url, params=params),
-            max_retries=2,
-            initial_delay=0.15
+            request_and_validate,
+            max_retries=3,
+            initial_delay=0.5,
         )
         if resp.status_code == 200:
             data = resp.json()
@@ -62,11 +88,17 @@ async def _esearch(query: str, max_results: int = 6) -> Tuple[List[str], int]:
         elif resp.status_code == 429:
             metrics_tracker.record_ncbi_retry(is_rate_limit=True)
             logger.warning("NCBI Rate limit (429) encountered during ESearch.")
+        raise PubMedServiceUnavailableError(
+            f"NCBI ESearch returned HTTP {resp.status_code}"
+        )
+    except RuntimeError as e:
+        metrics_tracker.record_ncbi_retry()
+        logger.warning("NCBI ESearch is temporarily unavailable after retries: %s", e)
+        raise PubMedServiceUnavailableError(str(e)) from e
     except Exception as e:
         metrics_tracker.record_ncbi_retry()
         logger.warning(f"NCBI ESearch API request failed after retries: {e}")
-
-    return [], 0
+        raise PubMedServiceUnavailableError("NCBI ESearch request failed") from e
 
 async def _efetch(pmid_list: List[str], max_results: int = 6) -> List[Article]:
     """

@@ -74,7 +74,6 @@ export interface SearchRequest {
   use_spell_correction?: boolean;
   use_llm_expansion: boolean;
   use_mesh_guardrail: boolean;
-  hybrid_alpha: number;
 }
 
 export interface SearchResponse {

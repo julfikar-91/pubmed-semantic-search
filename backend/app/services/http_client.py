@@ -22,6 +22,10 @@ class HttpClientPool:
             cls._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(connect=2.0, read=3.5, write=2.0, pool=5.0),
                 limits=httpx.Limits(max_keepalive_connections=60, max_connections=100, keepalive_expiry=120.0),
+                # The execution environment may expose a stale local proxy.
+                # NCBI and MeSH calls must connect directly rather than fail
+                # against an unavailable proxy endpoint.
+                trust_env=False,
                 headers={
                     "Accept-Encoding": "gzip, deflate",
                     "User-Agent": "NCBI-PubMed-SemanticSearch/1.0"

@@ -78,7 +78,6 @@ class SearchRequest(BaseModel):
     use_spell_correction: bool = Field(default=True, description="Enable Biomedical offline MeSH dictionary & fuzzy spell correction")
     use_llm_expansion: bool = Field(default=True, description="Enable LLM synonym expansion")
     use_mesh_guardrail: bool = Field(default=True, description="Enable MeSH dictionary guardrail validation")
-    hybrid_alpha: float = Field(default=0.6, ge=0.0, le=1.0, description="Weight for semantic similarity vs lexical PubMed score")
 
 class SearchResponse(BaseModel):
     query: str

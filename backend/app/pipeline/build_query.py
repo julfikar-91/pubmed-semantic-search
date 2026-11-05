@@ -44,8 +44,11 @@ def build_pubmed_query(
         if primary_tiab:
             term_parts.append(primary_tiab)
 
-        # 3. Add synonym terms with proper phrase quoting and inverted-term normalization
-        for syn in item.synonyms:
+        # 3. A rejected MeSH candidate may retain its original user text for
+        # recall, but none of its LLM-generated synonyms may enter the strict
+        # query.  Validated candidates were already MeSH-filtered in stage 4.
+        safe_synonyms = item.synonyms if mesh_info is None or mesh_info.is_valid else [item.term]
+        for syn in safe_synonyms:
             cleaned_syn = _clean_inverted_mesh(syn)
             formatted_syn = _format_tiab_term(cleaned_syn)
             if formatted_syn and formatted_syn not in term_parts:

@@ -1,12 +1,10 @@
 import React from 'react';
-import { SlidersHorizontal, Calendar, Filter, Layers } from 'lucide-react';
+import { SlidersHorizontal, Calendar, Filter } from 'lucide-react';
 import { SearchFilter } from '../types';
 
 interface FilterPanelProps {
   filters: SearchFilter;
   onChange: (updated: SearchFilter) => void;
-  hybridAlpha: number;
-  onAlphaChange: (val: number) => void;
 }
 
 const PUB_TYPES = [
@@ -20,8 +18,6 @@ const PUB_TYPES = [
 export const FilterPanel: React.FC<FilterPanelProps> = ({
   filters,
   onChange,
-  hybridAlpha,
-  onAlphaChange,
 }) => {
   const togglePubType = (pt: string) => {
     const current = filters.pub_types || [];
@@ -36,26 +32,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       <div className="filter-header">
         <SlidersHorizontal size={18} className="text-cyan-400" />
         <h4>Search & Hybrid Parameters</h4>
-      </div>
-
-      <div className="filter-section">
-        <div className="label-with-value">
-          <span className="filter-label"><Layers size={14} /> Hybrid Alpha Weight:</span>
-          <span className="filter-value text-cyan-400">{(hybridAlpha * 100).toFixed(0)}% Semantic / {((1 - hybridAlpha) * 100).toFixed(0)}% PubMed</span>
-        </div>
-        <input
-          type="range"
-          min="0.0"
-          max="1.0"
-          step="0.05"
-          value={hybridAlpha}
-          onChange={(e) => onAlphaChange(parseFloat(e.target.value))}
-          className="range-slider"
-        />
-        <div className="slider-labels">
-          <span>0% (PubMed Rank Only)</span>
-          <span>100% (Dense Vectors Only)</span>
-        </div>
       </div>
 
       <div className="filter-section">
